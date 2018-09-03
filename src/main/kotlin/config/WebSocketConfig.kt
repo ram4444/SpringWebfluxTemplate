@@ -102,24 +102,6 @@ class WebSocketConfig(
 
     val handler: GraphQLHandler = GraphQLHandler(schema, fetchers)
 
-    /*
-    @Bean
-    fun graphQLSubscript(session: WebSocketSession, sink: FluxSink<WebSocketMessage>) {
-        while(true) {
-            var mapresult = session.receive().map { ev ->
-                val objectMapper = ObjectMapper()
-                val json = ev.payloadAsText
-                val graphQLRequest: GraphQLRequest = objectMapper.readValue(json, GraphQLRequest::class.java)
-                val result = handler.execute_react(graphQLRequest.query, graphQLRequest.params, graphQLRequest.operationName, ctx = null)
-                mapOf("data" to result.getData<Any>())
-            }
-
-            sink.next(session.textMessage(mapresult.toString()))
-        }
-    }
-    */
-    //--------------------------------------------------------------
-
     @Bean
     fun wsh(): WebSocketHandler {
         val om= ObjectMapper()
@@ -137,21 +119,7 @@ class WebSocketConfig(
                 val tm = session.textMessage(str)
                 sink.next(tm)
 
-                /*
-                session.receive().map{ //ev ->
-                val json = ev.payloadAsText
-                val graphQLRequest:GraphQLRequest= objectMapper.readValue(json, GraphQLRequest::class.java)
-                val result = handler.execute_react(graphQLRequest.query, graphQLRequest.params, graphQLRequest.operationName, ctx=null)
-                }
-                */
-                //mapOf("data" to result.getData<Any>())
-
-
-                // repo fun: Flux<Entity>
-                // handler.execute_react: ExecutionResult
-                // RESTFUL Controller: mapOf("data" to result.getData<Any>())
             }
-
 
         }
 

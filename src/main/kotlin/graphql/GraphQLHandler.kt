@@ -2,6 +2,7 @@ package main.kotlin.graphql
 
 import graphql.ExecutionResult
 import graphql.GraphQL
+import graphql.execution.SubscriptionExecutionStrategy
 import graphql.schema.DataFetcher
 import graphql.schema.GraphQLSchema
 import graphql.schema.idl.SchemaParser
@@ -27,15 +28,23 @@ class GraphQLHandler(private val schema:GraphQLSchema){
 
     fun execute(query: String, params: Map<String, Any>, op:String?, ctx: Any?): ExecutionResult {
         val graphql = GraphQL.newGraphQL(schema).build()
+        val executionResult = graphql.execute{
+            builder -> builder.query(query).variables(params).operationName(op).context(ctx)
+        }
+        return executionResult
+    }
+
+    fun execute_react(query: String, params: Map<String, Any>, op:String?, ctx: Any?): ExecutionResult {
+        val graphql = GraphQL.newGraphQL(schema).build()
         val executionResult = graphql.executeAsync{
             builder -> builder.query(query).variables(params).operationName(op).context(ctx)
         }
         return executionResult.get()
     }
 
-    fun execute_react(query: String, params: Map<String, Any>, op:String?, ctx: Any?): ExecutionResult {
-        val graphql = GraphQL.newGraphQL(schema).build()
-        val executionResult = graphql.executeAsync(){
+    fun execute_subscription(query: String, params: Map<String, Any>, op:String?, ctx: Any?): ExecutionResult {
+        val graphql = GraphQL.newGraphQL(schema).subscriptionExecutionStrategy(SubscriptionExecutionStrategy()).build()
+        val executionResult = graphql.executeAsync{
             builder -> builder.query(query).variables(params).operationName(op).context(ctx)
         }
         return executionResult.get()

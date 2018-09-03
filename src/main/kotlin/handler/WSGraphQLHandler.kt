@@ -32,13 +32,14 @@ import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
+import kotlin.coroutines.experimental.buildIterator
 
 
 @Component
 class WSGraphQLHandler : WebSocketHandler {
-    private val topicprocessor = TopicProcessor.share<String>("shared", 1024)
-
-    private val subscriptionRef = AtomicReference<Subscription>()
+    private val topicprocessor = TopicProcessor.share<Void>("shared", 1024)
+    private val emitterProcessor = EmitterProcessor.create<String>()
+    //private val subscriptionRef = AtomicReference<Subscription>()
 
     val objectMapper = ObjectMapper().registerModule(KotlinModule())
 
@@ -55,7 +56,7 @@ class WSGraphQLHandler : WebSocketHandler {
             }
             type Subscription{
                 query_func1: Int
-                query_func2: TestEntity
+                query_func2: Int
             }
             type TestEntity{
                 id: String
@@ -85,7 +86,7 @@ class WSGraphQLHandler : WebSocketHandler {
 
     lateinit var fetchers: Map<String, List<Pair<String, DataFetcher<out Any>>>>
     lateinit var handler: GraphQLHandler
-    var testrtn : Flux<Int> = Flux.just(42).publish()
+    var testrtn : Flux<String> = Flux.just("abcde").publish()
 
     @PostConstruct
     fun init() {
@@ -100,29 +101,108 @@ class WSGraphQLHandler : WebSocketHandler {
                 "Subscription" to
                         listOf(
                                 "query_func1" to StaticDataFetcher(testrtn),
-                                "query_func2" to DataFetcher{repo.findAll()}
+                                "query_func2" to DataFetcher{repo.count().repeat()}
 
                         )
         )
 
         handler = GraphQLHandler(schema, fetchers)
     }
-    @Scheduled(fixedRate = 5000)
 
      //Example from Bael
     override fun handle(session: WebSocketSession): Mono<Void> {
+         println("session detected")
+
+         //session.send(Publisher/Flux<WebsocketMessage>) is a mono<Void>
+         // result.getData() is a Mono<Any>/Flux<Any>
+         //session.receive() is Flux<WebsocketMessage>
+         //session.receive().flatMap { it -> it.payloadAsText}
+         //session.send(Flux.interval(Duration.ofSeconds(1)).map {n -> n.toString()}.map {session.textMessage("rtn")  })
+
+         /*
+         val graphQLFlux =
+
+                 session.receive().map { ev ->
+                     val json = ev.payloadAsText
+                     val graphQLRequest: GraphQLRequest = objectMapper.readValue(json, GraphQLRequest::class.java)
+                     val result = handler.execute_react(graphQLRequest.query, graphQLRequest.params, graphQLRequest.operationName, ctx = null)
+                     val resultStream: Mono<String> = result.getData()
+                     resultStream
+
+                 }.flatMap { it -> it.toMono() }
+        */
 
 
-        //{"query": "subscription{query_func2{id,name}}","params":{"what":"env"}, "operationName":""}
-         //mapOf("data" to result.getData<Any>())
+         /* This print 123456 only
+        val rtn = session.send(Flux.interval(Duration.ofSeconds(1)).map {n -> n.toString()}.mergeWith(graphQLFlux).map {
+            it ->
+            println(it)
+            session.textMessage(it)
+        })
+        */
+         //println(session.receive().toString())
 
-         //session.send (Publisher<WebsocketMessage>) ----MonoVoid
-         //session.textMessage("") ------- WebsocketMessage
+         /* This return a stream of const msg
+         val rtn = session.send(
+                    Flux.interval(Duration.ofSeconds(1))
+                    .map{n -> n.toString()}
+                    .map {session.textMessage("rtn")  }
+                    )
+        */
 
-         //topicprocessor.map{ ev -> session.textMessage("AAAA") } -- Flux<WebSocketMessage>
-         //result.getData<Any>() -- Flux<Entity>
-         //session.receive() -- Flux<WebSocketMessage>
-         //session.receive().map{ev -> type} --Flux<type>
+
+
+         return session.send(topicprocessor.map { ev -> session.textMessage("Subcribed") }).and(session.receive().map { ev ->
+             val json = ev.payloadAsText
+             val graphQLRequest: GraphQLRequest = objectMapper.readValue(json, GraphQLRequest::class.java)
+             val result = handler.execute_subscription(graphQLRequest.query, graphQLRequest.params, graphQLRequest.operationName, ctx = null)
+             val resultStream: Publisher<ExecutionResult> = result.getData()
+             val subscriptionRef = AtomicReference<Subscription>()
+             class OvrSubscriber:Subscriber<ExecutionResult> {
+
+                 override fun onSubscribe(s: Subscription) {
+                     println("subscribe")
+                     subscriptionRef.set(s);
+                     s.request(1);
+                 }
+
+                 override fun onNext(er: ExecutionResult ) {
+                     //
+                     // process the next stock price
+                     //
+                     //processStockPriceChange(er.getData());
+
+                     //
+                     // ask the publisher for one more item please
+                     //
+                     println(er.getData<ExecutionResult>())
+                     session.send(topicprocessor.map { ev -> session.textMessage(er.getData<ExecutionResult>().toString()) })
+                     subscriptionRef.get().request(1)
+                 }
+
+                 override fun onError(t: Throwable) {
+                     //
+                     // The upstream publishing data source has encountered an error
+                     // and the subscription is now terminated.  Real production code needs
+                     // to decide on a error handling strategy.
+                     //
+                     println("error")
+                     session.close()
+                 }
+
+                 override fun onComplete() {
+                     //
+                     // the subscription has completed.  There is not more data
+                     //
+                     println("completed")
+                     session.close()
+                 }
+             }
+             resultStream.subscribe(OvrSubscriber())
+         }).log()
+                 .doOnNext { ev -> topicprocessor.onNext(ev) }
+
+         /* Previous SEMI-work code for GraphQL subsctiption
         return session.send(topicprocessor.map { ev -> session.textMessage("Here only return for 1 time") })
                 .and(session.receive().map{ ev ->
                     val json = ev.payloadAsText
@@ -155,39 +235,14 @@ class WSGraphQLHandler : WebSocketHandler {
 
                 }.log().map { objectMapper.writeValueAsString(it) }
                         .doOnNext { ev -> topicprocessor.onNext(ev) })
+*/
 
 
-         /*
-         val publisher = session.receive().map{ ev ->
-             val json = ev.payloadAsText
-             val graphQLRequest:GraphQLRequest= objectMapper.readValue(json, GraphQLRequest::class.java)
-             val result = handler.execute_react(graphQLRequest.query, graphQLRequest.params, graphQLRequest.operationName, ctx=null)
-             //val websocketMsg: WebSocketMessage = WebSocketMessage(WebSocketMessage.Type.TEXT,"")
-             mapOf("data" to result.getData<Any>()).toString()
-             result
-         }
-         */
-         /*
-         return session.send(processor
-                 .map { ev -> session.textMessage("MMMM") }).log().doOnNext{ ev -> processor.onNext("111") }
-                 */
     }
-
     /*
-    suspend fun getResultGraphQL(session: WebSocketSession) {
-        val mRet = session.receive().map{ ev ->
-            val json = ev.payloadAsText
-            val graphQLRequest:GraphQLRequest= objectMapper.readValue(json, GraphQLRequest::class.java)
-            val result = handler.execute_react(graphQLRequest.query, graphQLRequest.params, graphQLRequest.operationName, ctx=null)
-            result.getData<WebSocketMessage>()
-        }
-    }
-    */
-
     private fun request(n: Int) {
         val subscription = subscriptionRef.get()
         subscription?.request(n.toLong())
     }
-
-
+*/
 }

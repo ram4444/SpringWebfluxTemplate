@@ -90,7 +90,7 @@ class GraphQLController() {
         fetchers = mapOf(
                 "Query" to
                         listOf(
-                                "query_func1" to StaticDataFetcher(42),
+                                "query_func1" to StaticDataFetcher(999),
                                 "query_func2" to DataFetcher{mongoDBservice.testInsert()}
 
                         )
@@ -106,7 +106,7 @@ class GraphQLController() {
     }
 
     @PostMapping("/graphql")
-    suspend fun executeGraphQL(@RequestBody request:GraphQLRequest):Map<String, Any> {
+    fun executeGraphQL(@RequestBody request:GraphQLRequest):Map<String, Any> {
         //For Simple Case
         //curl 127.0.0.1:8080/graphql -H content-type:application/json -d'{"query": "query{hello,answer,testEntity{name,id}}","params":{"what":"env"}}'
         // For JSON Array
