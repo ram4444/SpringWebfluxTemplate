@@ -9,12 +9,12 @@ import org.springframework.data.mongodb.core.MongoTemplate
 class MongoConfig{
     @Bean
     fun mongo():Mongo {
-        return MongoClient("172.17.0.2", 27017)
+        return MongoClient("172.17.0.3", 27017)
     }
 
     @Bean
     fun mongoTemplate(): MongoTemplate {
-        return MongoTemplate(MongoClient("172.17.0.2", 27017), "test")
+        return MongoTemplate(MongoClient("172.17.0.3", 27017), "test")
     }
 
 }
