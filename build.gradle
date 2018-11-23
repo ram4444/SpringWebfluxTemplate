@@ -111,6 +111,7 @@ dependencies {
     //compile "com.github.kittinunf.fuel:fuel-forge:$fuel_version" //for Forge support
     compile "com.beust:klaxon:$klaxon_version"
     //compile "org.springframework.boot:spring-messaging:$spring_version"
+    compile group: 'pl.wendigo', name: 'chrome-reactive-kotlin', version: '0.3.+'
 
     compile "org.projectlombok:lombok:$lombok_version"
     testCompile group: 'junit', name: 'junit', version: '4.12'

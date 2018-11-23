@@ -28,6 +28,12 @@ import org.springframework.http.MediaType.*
 import org.springframework.http.ResponseEntity
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
+import pl.wendigo.chrome.ChromeProtocol
+import pl.wendigo.chrome.InspectablePage
+import pl.wendigo.chrome.Inspector
+import pl.wendigo.chrome.domain.page.NavigateRequest
+import pl.wendigo.chrome.HeadlessSession
+
 
 import reactor.core.publisher.Flux
 import reactor.core.publisher.toFlux
@@ -52,6 +58,7 @@ class GraphQLController() {
             type Query{
                 query_func1: Int
                 query_func2: [TestEntity]
+                query_func3(name: String!): String!
             }
             type TestEntity{
                 id: String
@@ -91,7 +98,8 @@ class GraphQLController() {
                 "Query" to
                         listOf(
                                 "query_func1" to StaticDataFetcher(999),
-                                "query_func2" to DataFetcher{mongoDBservice.testInsert()}
+                                "query_func2" to DataFetcher{mongoDBservice.testInsert()},
+                                "query_func3" to DataFetcher{mongoDBservice.testInsert2(it.getArgument("name"))}
 
                         )
         )
@@ -114,6 +122,7 @@ class GraphQLController() {
         //curl 127.0.0.1:8080/graphql -H content-type:application/json -d'{"query": "{query_func2{id,name}}","params":{"what":"env"}, "operationName":""}'
         //curl 127.0.0.1:8080/graphql -H content-type:application/json -d'{"query": "mutation{sosad}","params":{"what":"env"}}'
         //curl 127.0.0.1:8080/graphql -H content-type:application/json -d'{"query": "{query_func1}","params":{"what":"env"}}'
+        //{"query": "{query_func3(name: \"ddd\")}","params":{"what":"env"}, "operationName":""}
 
         val result = handler.execute(request.query, request.params, request.operationName, ctx = null)
 
@@ -297,6 +306,29 @@ class GraphQLController() {
         } else {
             return mapOf("rtn_code" to "fail", "msg" to "Other methmod is not allow")
         }
+    }
+
+    @PostMapping("/headlesschrome")
+    fun loadpage(@RequestHeader url:String){
+        val inspector = Inspector.connect("127.0.0.1:9222")
+        val protocol = ChromeProtocol.openHeadlessSession(inspector.openedPages().firstOrError().blockingGet())
+
+        //val headless = protocol.headless("about:blank", 1280, 1024).blockingGet()
+
+        //println("browserContext: ${headless.browserContextId}")
+        //println("target: ${headless.targetId}")
+
+        protocol.Page.enable().blockingGet()
+
+        val event = protocol.Page.navigate(NavigateRequest(url=url)).flatMap{ (frameId) ->
+            protocol.Page.frameStoppedLoading().filter {
+                it.frameId == frameId
+            }
+                    .take(1)
+                    .singleOrError()
+        }.blockingGet()
+
+        println("page loaded: $event")
     }
 
 

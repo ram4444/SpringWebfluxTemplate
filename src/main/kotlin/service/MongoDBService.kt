@@ -29,4 +29,15 @@ class MongoDBService {
 
         return listOf<TestEntity>(testEntity)
     }
+
+    fun testInsert2(name: String): String {
+
+        val testEntity = TestEntity(null, name)
+
+        repo.insert(testEntity)
+        //val reactiveTemplate: ReactiveMongoTemplate
+        //reactiveTemplate.insert(testEntity)
+
+        return testEntity.id.orEmpty()
+    }
 }
