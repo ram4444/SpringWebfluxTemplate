@@ -52,7 +52,6 @@ class GraphQLController() {
     @Autowired
     val webfluxJSONPlaceholderService: WebfluxJSONPlaceholderService = WebfluxJSONPlaceholderService()
 
-
     //Initiate schema from somewhere
     val schema ="""
             type Query{
@@ -64,34 +63,12 @@ class GraphQLController() {
                 id: String
                 name: String
             }"""
-    /* Schema Example
-    val schema ="""
-            type Query{
-                answer: Int
-                hello(what:String="World"):String
-                testEntityList: [TestEntity]
-            }
-            type TestEntity{
-                id: String
-                name: String
-            }
-            type Mutation{
-                sosad: Int
-                test: String
-            }
-        """
-    */
 
     lateinit var fetchers: Map<String, List<Pair<String, DataFetcher<out Any>>>>
     lateinit var handler:GraphQLHandler
 
     @PostConstruct
     fun init() {
-        //--DELETE WHEN NOT IN USE--
-        /*Initialize sample Object
-        val sample_obj1:SampleEntity = SampleEntity("1")
-        val sample_obj2:SampleEntity = SampleEntity("2")
-        */
 
         //initialize Fetchers
         fetchers = mapOf(
@@ -115,14 +92,6 @@ class GraphQLController() {
 
     @PostMapping("/graphql")
     fun executeGraphQL(@RequestBody request:GraphQLRequest):Map<String, Any> {
-        //For Simple Case
-        //curl 127.0.0.1:8080/graphql -H content-type:application/json -d'{"query": "query{hello,answer,testEntity{name,id}}","params":{"what":"env"}}'
-        // For JSON Array
-        //curl 127.0.0.1:8080/graphql -H content-type:application/json -d'{"query": "query{hello,answer,testEntityList{name,id}}","params":{"what":"env"}}'
-        //curl 127.0.0.1:8080/graphql -H content-type:application/json -d'{"query": "{query_func2{id,name}}","params":{"what":"env"}, "operationName":""}'
-        //curl 127.0.0.1:8080/graphql -H content-type:application/json -d'{"query": "mutation{sosad}","params":{"what":"env"}}'
-        //curl 127.0.0.1:8080/graphql -H content-type:application/json -d'{"query": "{query_func1}","params":{"what":"env"}}'
-        //{"query": "{query_func3(name: \"ddd\")}","params":{"what":"env"}, "operationName":""}
 
         val result = handler.execute(request.query, request.params, request.operationName, ctx = null)
 
@@ -168,168 +137,5 @@ class GraphQLController() {
                 .map { body -> ResponseEntity.ok().body(body) }
                 .toMono()
     }
-
-
-    /* Example of incoming RequestBody json
-        {
-            "header" : [
-                {"Authorization" : "Bearer token"},
-                {}
-            ],
-            "body" : [
-                {"data-type": "raw", "key": "grant_type", "value": "password"},
-                {"data-type": "raw", "json": "json"
-            ]
-        }
-    */
-    @PostMapping("/curlasyncbyfuel")
-    fun curlAsyncByfuel(@RequestHeader method:String, @RequestHeader url:String, @RequestBody requestBody:String):Map<String, Any> {
-        var rtn:String=""
-
-        println("---------------------------------------------------------")
-        println("method: "+method)
-        println("body:")
-        println(requestBody)
-
-        if (method.toLowerCase().equals("get")){
-            url.httpGet().responseString { request, response, result ->
-
-                when (result) {
-                    is Result.Failure -> {
-                        val ex = result.getException()
-                        println("exception: "+ ex)
-                        println("response: "+ response)
-                        rtn = ex.toString()
-                    }
-                    is Result.Success -> {
-                        val data = result.get()
-                        println("data: "+ data)
-                        println("response: "+ response)
-                        rtn = data.toString()
-                    }
-                }
-            }
-        } else if (method.toLowerCase().equals("post")) {
-            url.httpPost().responseString { request, response, result ->
-                //do something with response\
-
-                when (result) {
-                    is Result.Failure -> {
-                        val ex = result.getException()
-                        println("exception: "+ ex)
-                        println("response: "+ response)
-                        rtn = ex.toString()
-                    }
-                    is Result.Success -> {
-                        val data = result.get()
-                        println("data: "+ data)
-                        println("response: "+ response)
-                        rtn = data.toString()
-                    }
-                }
-            }
-        } else {
-            rtn = "Other method is not support"
-        }
-        return mapOf("data" to rtn)
-    }
-
-    @PostMapping("/curlbyfuel")
-    fun curlByfuel(@RequestHeader method:String, @RequestHeader url:String, @RequestBody body: String):Map<String, Any> {
-        //JSON is in the @RequestBody
-        var rtn:String=""
-
-        /*
-        println("---------------------------------------------------------")
-        println("method: "+method)
-        println("body:")
-        println(body)
-        */
-
-        //val objectMapper = ObjectMapper().registerModule(KotlinModule())
-        val bodymap: Map<String, Map<String,Any>> = jacksonObjectMapper().readValue(body.trim())
-        //val body = string2json(body)
-
-        if (method.toLowerCase().equals("get")){
-            // Get the header(to be sent) from the body
-
-            //JsonReader(StringReader(array))
-            val fuelcurlHeader_map:Map<String,Any>? = bodymap.get("header")
-            //val fuelcurlHeader = body.get("header") as JsonObject
-
-            if (null != fuelcurlHeader_map) {
-                // Header does exist
-                //val fuelcurlHeader:List<Map<String, String>> = jacksonObjectMapper().readValue(fuelcurlHeader_listmap)
-                //val headermap:Map<String, Any>? = mapOf(bodymap.get("header"))
-                val (request, response, result) = url.httpGet().header(fuelcurlHeader_map).responseString()
-                println("----------------request: ")
-                println(request)
-                println("-------------------------")
-                return mapOf("rtn_code" to response.statusCode,
-                            "response" to response.responseMessage,
-                            "result" to result.get()
-                )
-            } else {
-                // Header does not exist
-                val (request, response, result) = url.httpGet().responseString()
-                return mapOf("rtn_code" to "success", "response" to response.data, "result" to result.get())
-            }
-
-        } else if (method.toLowerCase().equals("post")) {
-            /* Post method
-            * */
-            // Get the header and body (to be sent) from the body
-            val fuelcurlHeader_map:Map<String,Any>? = bodymap.get("header")
-            val fuelcurlBody_map:Map<String,Any>? = bodymap.get("body")
-
-            if (null != fuelcurlBody_map) {
-                //val listpairStringAny: List<Pair<String, Any>> = jacksonObjectMapper().readValue(fuelcurlBody_str)
-                val fuelcurlBody_listpairstrany:List<Pair<String,Any?>>? = fuelcurlBody_map.toList()
-                val (request, response, result) = url.httpPost(fuelcurlBody_listpairstrany).responseString()
-                println("----------------request: ")
-                println(request)
-                println("-------------------------")
-                return mapOf("rtn_code" to response.statusCode,
-                        "response" to response.responseMessage,
-                        "result" to result.get()
-                )
-            } else {
-                val (request, response, result) = url.httpPost().responseString()
-                println("----------------request: ")
-                println(request)
-                println("-------------------------")
-                return mapOf("rtn_code" to response.statusCode,
-                        "response" to response.responseMessage,
-                        "result" to result.get()
-                )
-            }
-        } else {
-            return mapOf("rtn_code" to "fail", "msg" to "Other methmod is not allow")
-        }
-    }
-
-    @PostMapping("/headlesschrome")
-    fun loadpage(@RequestHeader url:String){
-        val inspector = Inspector.connect("127.0.0.1:9222")
-        val protocol = ChromeProtocol.openHeadlessSession(inspector.openedPages().firstOrError().blockingGet())
-
-        //val headless = protocol.headless("about:blank", 1280, 1024).blockingGet()
-
-        //println("browserContext: ${headless.browserContextId}")
-        //println("target: ${headless.targetId}")
-
-        protocol.Page.enable().blockingGet()
-
-        val event = protocol.Page.navigate(NavigateRequest(url=url)).flatMap{ (frameId) ->
-            protocol.Page.frameStoppedLoading().filter {
-                it.frameId == frameId
-            }
-                    .take(1)
-                    .singleOrError()
-        }.blockingGet()
-
-        println("page loaded: $event")
-    }
-
 
 }

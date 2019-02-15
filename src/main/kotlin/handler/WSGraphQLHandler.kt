@@ -66,23 +66,6 @@ class WSGraphQLHandler : WebSocketHandler {
               query: Query
               subscription: Subscription
             }"""
-    /* Schema Example
-    val schema ="""
-            type Query{
-                answer: Int
-                hello(what:String="World"):String
-                testEntityList: [TestEntity]
-            }
-            type TestEntity{
-                id: String
-                name: String
-            }
-            type Mutation{
-                sosad: Int
-                test: String
-            }
-        """
-    */
 
     lateinit var fetchers: Map<String, List<Pair<String, DataFetcher<out Any>>>>
     lateinit var handler: GraphQLHandler
@@ -90,11 +73,6 @@ class WSGraphQLHandler : WebSocketHandler {
 
     @PostConstruct
     fun init() {
-        //--DELETE WHEN NOT IN USE--
-        /*Initialize sample Object
-        val sample_obj1:SampleEntity = SampleEntity("1")
-        val sample_obj2:SampleEntity = SampleEntity("2")
-        */
 
         //initialize Fetchers
         fetchers = mapOf(
@@ -202,47 +180,6 @@ class WSGraphQLHandler : WebSocketHandler {
          }).log()
                  .doOnNext { ev -> topicprocessor.onNext(ev) }
 
-         /* Previous SEMI-work code for GraphQL subsctiption
-        return session.send(topicprocessor.map { ev -> session.textMessage("Here only return for 1 time") })
-                .and(session.receive().map{ ev ->
-                    val json = ev.payloadAsText
-                    val graphQLRequest:GraphQLRequest= objectMapper.readValue(json, GraphQLRequest::class.java)
-                    val result = handler.execute_react(graphQLRequest.query, graphQLRequest.params, graphQLRequest.operationName, ctx=null)
-                    val resultStream: Publisher<ExecutionResult>  = result.getData()
-                    class OvrSubscriber:Subscriber<ExecutionResult>{
-                        override fun onSubscribe(s:Subscription) {
-                            println("subscribe")
-                            subscriptionRef.set(s)
-                            request(1)
-                        }
-                        override fun onNext(graphqlExeResult:ExecutionResult) {
-                            //println("updating...")
-                            val stockPriceUpdate = graphqlExeResult.getData<Any>().toString()
-                            println(graphqlExeResult.getData<Any>().toString())
-                            session.send(topicprocessor.map { ev -> session.textMessage(stockPriceUpdate) })
-                            request(1)
-                        }
-                        override fun onError(t: Throwable) {
-                            println("error")
-                            session.close()
-                        }
-                        override fun onComplete() {
-                            println("completed")
-                            session.close()
-                        }
-                    }
-                    resultStream.subscribe(OvrSubscriber() )
-
-                }.log().map { objectMapper.writeValueAsString(it) }
-                        .doOnNext { ev -> topicprocessor.onNext(ev) })
-*/
-
-
     }
-    /*
-    private fun request(n: Int) {
-        val subscription = subscriptionRef.get()
-        subscription?.request(n.toLong())
-    }
-*/
+
 }
