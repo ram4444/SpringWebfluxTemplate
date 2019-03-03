@@ -15,24 +15,11 @@ import main.kotlin.service.MongoDBReactiveService
 import main.kotlin.service.WebfluxService
 import org.springframework.beans.factory.annotation.Autowired
 import javax.annotation.PostConstruct
-import com.fasterxml.jackson.core.JsonProcessingException
-import graphql.execution.reactive.CompletionStageMappingPublisher
-import main.kotlin.config.WebSocketConfig
-import main.kotlin.pojo.TestEntity
-import main.kotlin.repo.TestEntityRepository
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
-import org.springframework.messaging.Message
-import org.springframework.messaging.MessageHandler
-import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.web.reactive.socket.WebSocketMessage
 import reactor.core.publisher.*
-import java.time.Duration
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
-import java.util.function.Consumer
-import kotlin.coroutines.experimental.buildIterator
 
 
 @Component
@@ -91,45 +78,6 @@ class WSGraphQLHandler : WebSocketHandler {
     override fun handle(session: WebSocketSession): Mono<Void> {
          println("session detected")
 
-         //session.send(Publisher/Flux<WebsocketMessage>) is a mono<Void>
-         // result.getData() is a Mono<Any>/Flux<Any>
-         //session.receive() is Flux<WebsocketMessage>
-         //session.receive().flatMap { it -> it.payloadAsText}
-         //session.send(Flux.interval(Duration.ofSeconds(1)).map {n -> n.toString()}.map {session.textMessage("rtn")  })
-
-         /*
-         val graphQLFlux =
-
-                 session.receive().map { ev ->
-                     val json = ev.payloadAsText
-                     val graphQLRequest: GraphQLRequest = objectMapper.readValue(json, GraphQLRequest::class.java)
-                     val result = handler.execute_react(graphQLRequest.query, graphQLRequest.params, graphQLRequest.operationName, ctx = null)
-                     val resultStream: Mono<String> = result.getData()
-                     resultStream
-
-                 }.flatMap { it -> it.toMono() }
-        */
-
-
-         /* This print 123456 only
-        val rtn = session.send(Flux.interval(Duration.ofSeconds(1)).map {n -> n.toString()}.mergeWith(graphQLFlux).map {
-            it ->
-            println(it)
-            session.textMessage(it)
-        })
-        */
-         //println(session.receive().toString())
-
-         /* This return a stream of const msg
-         val rtn = session.send(
-                    Flux.interval(Duration.ofSeconds(1))
-                    .map{n -> n.toString()}
-                    .map {session.textMessage("rtn")  }
-                    )
-        */
-
-
-
          return session.send(topicprocessor.map { ev -> session.textMessage("Subcribed") }).and(session.receive().map { ev ->
              val json = ev.payloadAsText
              val graphQLRequest: GraphQLRequest = objectMapper.readValue(json, GraphQLRequest::class.java)
@@ -145,11 +93,6 @@ class WSGraphQLHandler : WebSocketHandler {
                  }
 
                  override fun onNext(er: ExecutionResult ) {
-                     //
-                     // process the next stock price
-                     //
-                     //processStockPriceChange(er.getData());
-
                      //
                      // ask the publisher for one more item please
                      //
@@ -175,6 +118,7 @@ class WSGraphQLHandler : WebSocketHandler {
                      println("completed")
                      session.close()
                  }
+
              }
              resultStream.subscribe(OvrSubscriber())
          }).log()
@@ -183,3 +127,19 @@ class WSGraphQLHandler : WebSocketHandler {
     }
 
 }
+/* This print 123456 only
+val rtn = session.send(Flux.interval(Duration.ofSeconds(1)).map {n -> n.toString()}.mergeWith(graphQLFlux).map {
+    it ->
+    println(it)
+    session.textMessage(it)
+})
+*/
+//println(session.receive().toString())
+
+/* This return a stream of const msg
+val rtn = session.send(
+           Flux.interval(Duration.ofSeconds(1))
+           .map{n -> n.toString()}
+           .map {session.textMessage("rtn")  }
+           )
+*/

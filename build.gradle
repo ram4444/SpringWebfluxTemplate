@@ -91,6 +91,7 @@ dependencies {
     compile "org.slf4j:slf4j-api:$slf4j_version"
     compile "ch.qos.logback:logback-classic:1.0.9"
     compile "ch.qos.logback:logback-core:1.0.9"
+    compile "io.github.microutils:kotlin-logging:1.6.23"
     //SPRINGBOOT
     //compile "org.springframework.data:spring-data-mongodb:$springdata_mongo_version"
     compile "org.springframework.boot:spring-boot-starter-webflux:$springboot_version"

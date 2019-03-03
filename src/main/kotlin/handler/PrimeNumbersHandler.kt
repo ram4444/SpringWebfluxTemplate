@@ -18,6 +18,7 @@ class PrimeNumbersHandler : WebSocketHandler {
         ).and(
                 session.receive()
                         .map { ev ->
+                            println("msg received")
                             val parts = ev.payloadAsText.split(":")
                             Event(sender = parts[0].toInt(), value = parts[1].toInt())
 

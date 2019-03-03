@@ -1,46 +1,13 @@
 package main.kotlin.controller
 
-import com.beust.klaxon.JsonArray
-import com.beust.klaxon.JsonObject
-import com.beust.klaxon.Klaxon
-import com.beust.klaxon.Parser
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.util.JSONPObject
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.github.kittinunf.fuel.core.Request
+
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.result.Result
-import graphql.schema.DataFetcher
-import graphql.schema.StaticDataFetcher
-import main.kotlin.graphql.GraphQLHandler
-import main.kotlin.graphql.GraphQLRequest
-import main.kotlin.pojo.LightComment
-import main.kotlin.pojo.Response
-import main.kotlin.pojo.TestEntity
-import main.kotlin.service.MongoDBService
-import main.kotlin.service.WebfluxJSONPlaceholderService
-import main.kotlin.service.WebfluxService
-import main.kotlin.util.string2json
-import org.springframework.http.MediaType.*
-import org.springframework.http.ResponseEntity
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
-import pl.wendigo.chrome.ChromeProtocol
-import pl.wendigo.chrome.InspectablePage
-import pl.wendigo.chrome.Inspector
-import pl.wendigo.chrome.domain.page.NavigateRequest
-import pl.wendigo.chrome.HeadlessSession
 
-
-import reactor.core.publisher.Flux
-import reactor.core.publisher.toFlux
-import reactor.core.publisher.Mono
-import reactor.core.publisher.toMono
-import reactor.core.scheduler.Schedulers
-import javax.annotation.PostConstruct
 
 @RestController
 class FuelController() {
