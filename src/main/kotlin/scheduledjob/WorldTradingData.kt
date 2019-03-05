@@ -1,10 +1,8 @@
 package main.kotlin.scheduledjob
 
-import main.kotlin.controller.FuelController
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
@@ -27,18 +25,6 @@ class WorldTradingData {
     @Value("\${WorldTradingData.url_fx_history}")                    val url_fx_history: String = ""
     @Value("\${WorldTradingData.url_fx_singledayhistory}")           val url_fx_singleDayHistory: String = ""
 
-    /*
-    lateinit var api_token: String
-    lateinit var url: String
-
-    @PostConstruct
-    fun init() {
-        api_token = ${wtd.api_token}"
-        url:
-    }
-    */
-
-    //private val map_api_token:Map<String,Any> = mapOf(Pair("api_token",api_token))
     private val logger = KotlinLogging.logger {}
 
     /** Example
@@ -99,7 +85,7 @@ class WorldTradingData {
                 "symbol" to "AAPL,MSFT,HSBA.L"
         )
         val (request, response, result) = url_stock_realtime.httpGet(param).responseString()
-        logger.debug{"here"}
+        logger.info{"here"}
         logger.debug{"Request: ${request}" }
         logger.debug{"Response: ${response}" }
         logger.debug{"Result: ${result}" }

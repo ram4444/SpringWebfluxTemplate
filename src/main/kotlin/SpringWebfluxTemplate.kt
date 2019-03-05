@@ -12,9 +12,8 @@ import org.springframework.scheduling.annotation.EnableScheduling
 @EnableScheduling
 class SpringWebfluxTemplate
 fun main(args: Array<String>) {
+    //TODO: Implement calling to R, Input: JSON/Array output: JSON/Array
     //val applicationContext: ApplicationContext =  SpringApplication.run(SpringTemplate::class.java, *args)
-    val root = org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME) as ch.qos.logback.classic.Logger
-    root.level = Level.DEBUG
     val app = SpringApplication(SpringWebfluxTemplate::class.java)
     app.webApplicationType = WebApplicationType.REACTIVE
     app.run(*args)

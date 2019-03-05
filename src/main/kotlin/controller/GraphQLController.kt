@@ -24,6 +24,7 @@ import main.kotlin.service.MongoDBService
 import main.kotlin.service.WebfluxJSONPlaceholderService
 import main.kotlin.service.WebfluxService
 import main.kotlin.util.string2json
+import mu.KotlinLogging
 import org.springframework.http.MediaType.*
 import org.springframework.http.ResponseEntity
 import org.springframework.beans.factory.annotation.Autowired
@@ -51,6 +52,8 @@ class GraphQLController() {
     val webFluxDBService: WebfluxService = WebfluxService()
     @Autowired
     val webfluxJSONPlaceholderService: WebfluxJSONPlaceholderService = WebfluxJSONPlaceholderService()
+
+    private val logger = KotlinLogging.logger {}
 
     //Initiate schema from somewhere
     val schema ="""
@@ -87,6 +90,7 @@ class GraphQLController() {
     @RequestMapping("/")
     suspend fun pingcheck():String {
         println("ping")
+        logger.debug { "Debugging" }
         return "success"
     }
 

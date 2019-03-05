@@ -6,10 +6,12 @@ import main.kotlin.repo.TestEntityRepository
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import main.kotlin.pojo.TestEntity
+import mu.KotlinLogging
 
 @Service
 class MongoDBService {
     val objectMapper = ObjectMapper().registerModule(KotlinModule())
+    private val logger = KotlinLogging.logger {}
     @Autowired
     lateinit var repo: TestEntityRepository
 
@@ -21,6 +23,8 @@ class MongoDBService {
 
     fun testInsert(): List<TestEntity> {
 
+        logger.debug { "($this.javaClass) is debugging" }
+        logger.info { "This is info"}
         val testEntity = TestEntity(null, "tom")
 
             repo.insert(testEntity)
