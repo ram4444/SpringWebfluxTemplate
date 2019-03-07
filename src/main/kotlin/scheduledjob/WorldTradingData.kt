@@ -1,5 +1,7 @@
 package main.kotlin.scheduledjob
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.github.kittinunf.fuel.Fuel
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.ConfigurationProperties
@@ -8,6 +10,9 @@ import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import com.github.kittinunf.fuel.httpGet
+import com.github.kittinunf.fuel.jackson.responseObject
+import main.kotlin.controller.FuelController
+import main.kotlin.pojo.httpRtn.WorldTradingData.StockRealtime
 import org.springframework.context.annotation.Configuration
 import org.springframework.stereotype.Controller
 
@@ -41,55 +46,39 @@ class WorldTradingData {
      */
     @Scheduled(fixedRate = 50000)
     fun getRealTimeStock(){
-        /*
-        https://www.worldtradingdata.com/api/v1/stock?symbol=AAPL,MSFT,HSBA.L&api_token=demo
-        {
-            "symbols_requested": 1,
-            "symbols_returned": 1,
-            "data": [
-                {
-                    "symbol": "AAPL",
-                    "name": "Apple Inc.",
-                    "price": "174.97",
-                    "currency": "USD",
-                    "price_open": "174.28",
-                    "day_high": "175.15",
-                    "day_low": "172.89",
-                    "52_week_high": "233.47",
-                    "52_week_low": "142.00",
-                    "day_change": "1.82",
-                    "change_pct": "1.05",
-                    "close_yesterday": "173.15",
-                    "market_cap": "825032547355",
-                    "volume": "25886167",
-                    "volume_avg": "28294177",
-                    "shares": "4715280000",
-                    "stock_exchange_long": "NASDAQ Stock Exchange",
-                    "stock_exchange_short": "NASDAQ",
-                    "timezone": "EST",
-                    "timezone_name": "America/New_York",
-                    "gmt_offset": "-18000",
-                    "last_trade_time": "2019-03-01 16:00:01"
-                }
-            ]
-        }
-         */
+
         val json_ReqBody:String
         val json_map_rtnStr:String
 
         logger.info("The time is now ${DateTimeFormatter.ISO_LOCAL_TIME.format(LocalDateTime.now())}")
 
+        //TODO: Implement HTTP request POJOs
+
+        //TODO: POJOs -> map -> JSONString
+
+        //val fuelRtnMap = FuelController().curlByfuel("get", url_stock_realtime,  json_ReqBody)
+
+        val (request, response, result) = Fuel.get(
+                url_stock_realtime,
+                listOf("symbol" to "AAPL,MSFT,HSBA.L",
+                        "api_token" to api_token))
+                .responseObject<StockRealtime>(jacksonObjectMapper())
+        logger.debug{"Request: ${request}" }
+        logger.debug{"Response: ${response}" }
+        logger.debug{"Result: ${result}" }
+        //logger.debug { jacksonObj.toString() }
+
+        /* Quick Start Method
         val param:List<Pair<String, Any?>> = listOf(Pair("api_token", api_token), Pair("symbol", "AAPL,MSFT,HSBA.L"))
         val header_map:Map<String,Any>? = mapOf(
                 "api_token" to api_token,
                 "symbol" to "AAPL,MSFT,HSBA.L"
         )
         val (request, response, result) = url_stock_realtime.httpGet(param).responseString()
-        logger.info{"here"}
         logger.debug{"Request: ${request}" }
         logger.debug{"Response: ${response}" }
         logger.debug{"Result: ${result}" }
-        //val fuelRtnMap = FuelController().curlByfuel("get", url_stock_realtime,  json_ReqBody)
+        */
     }
 
     fun getRealTimeFx(){

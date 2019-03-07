@@ -8,7 +8,7 @@ import graphql.schema.GraphQLSchema
 import graphql.schema.idl.SchemaParser
 import graphql.schema.idl.RuntimeWiring.newRuntimeWiring
 import graphql.schema.idl.SchemaGenerator
-import kotlinx.coroutines.experimental.future.await
+import kotlinx.coroutines.future.await
 
 class GraphQLHandler(private val schema:GraphQLSchema){
     constructor(schema:String, resolvers: Map<String, List<Pair<String, DataFetcher<*>>>>) :

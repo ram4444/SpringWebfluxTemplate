@@ -13,6 +13,8 @@ import org.springframework.scheduling.annotation.EnableScheduling
 class SpringWebfluxTemplate
 fun main(args: Array<String>) {
     //TODO: Implement calling to R, Input: JSON/Array output: JSON/Array
+    //TODO: Test GraphQL Subscription
+    //TODO: Test GraphQL Query/insertion
     //val applicationContext: ApplicationContext =  SpringApplication.run(SpringTemplate::class.java, *args)
     val app = SpringApplication(SpringWebfluxTemplate::class.java)
     app.webApplicationType = WebApplicationType.REACTIVE
