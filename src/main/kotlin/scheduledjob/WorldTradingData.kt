@@ -11,9 +11,13 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.jackson.responseObject
+import main.kotlin.config.KakfaConfig
 import main.kotlin.controller.FuelController
 import main.kotlin.pojo.httpRtn.WorldTradingData.StockRealtime
+import org.json.JSONObject
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Configuration
+import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Controller
 
 @Configuration
@@ -32,6 +36,9 @@ class WorldTradingData {
 
     private val logger = KotlinLogging.logger {}
 
+    @Autowired
+    lateinit var kafkaTemplate: KafkaTemplate<String, String>
+
     /** Example
      * This @Schedule annotation run every 5 seconds in this case. It can also
      * take a cron like syntax.
@@ -44,15 +51,13 @@ class WorldTradingData {
         * "0 0 9-17 * * MON-FRI" = on the hour nine-to-five weekdays
         * "0 0 0 25 12 ?" = every Christmas Day at midnight
      */
-    @Scheduled(fixedRate = 50000)
+    //@Scheduled(fixedRate = 50000)
     fun getRealTimeStock(){
 
         val json_ReqBody:String
         val json_map_rtnStr:String
 
         logger.info("The time is now ${DateTimeFormatter.ISO_LOCAL_TIME.format(LocalDateTime.now())}")
-
-        //TODO: Implement HTTP request POJOs
 
         //TODO: POJOs -> map -> JSONString
 
@@ -66,7 +71,9 @@ class WorldTradingData {
         logger.debug{"Request: ${request}" }
         logger.debug{"Response: ${response}" }
         logger.debug{"Result: ${result}" }
-        //logger.debug { jacksonObj.toString() }
+
+        // pojo = result.get()
+        //logger.debug { jacksonObjectMapper().writeValueAsString(result.get()) }
 
         /* Quick Start Method
         val param:List<Pair<String, Any?>> = listOf(Pair("api_token", api_token), Pair("symbol", "AAPL,MSFT,HSBA.L"))
@@ -102,8 +109,17 @@ class WorldTradingData {
             }
         }
          */
+        val (request, response, result) = Fuel.get(
+                url_fx_realtime,
+                listOf("base" to "USD",
+                        "api_token" to api_token))
+                .responseObject<StockRealtime>(jacksonObjectMapper())
+        logger.debug{"Request: ${request}" }
+        logger.debug{"Response: ${response}" }
+        logger.debug{"Result: ${result}" }
     }
 
+    @Scheduled(fixedRate = 50000)
     fun getIntraDay(){
         /*
         https://www.worldtradingdata.com/api/v1/intraday?symbol=AAPL&range=1&interval=1&api_token=demo
@@ -130,8 +146,20 @@ class WorldTradingData {
             }
         }
          */
-        logger.info("The time is now ${DateTimeFormatter.ISO_LOCAL_TIME.format(LocalDateTime.now())}")
-
+        val (request, response, result) = Fuel.get(
+                url_stock_intraday,
+                listOf("symbol" to "AAPL",
+                        "range" to "1",
+                        "interval" to "1",
+                        "api_token" to api_token))
+                .responseString()
+        //logger.debug{"Request: ${request}" }
+        //logger.debug{"Response: ${response}" }
+        //logger.debug{"Result: ${result.get()}" }
+        val json = JSONObject(result.get())
+        val intraday = json.getJSONObject("intraday")
+        //logger.debug{intraday.getJSONObject("2019-03-15 15:59:00")}
+        kafkaTemplate.send(KakfaConfig.PRODUCER_STREAM,intraday.getJSONObject("2019-03-15 15:59:00").toString())
     }
 
     fun getHistoryStock(){
@@ -157,6 +185,15 @@ class WorldTradingData {
             }
         }
          */
+        val (request, response, result) = Fuel.get(
+                url_stock_history,
+                listOf("symbol" to "AAPL",
+                        "sort" to "newest",
+                        "api_token" to api_token))
+                .responseString()
+        logger.debug{"Request: ${request}" }
+        logger.debug{"Response: ${response}" }
+        logger.debug{"Result: ${result.get()}" }
     }
 
     fun getMultiSingleDayHistoryStock(){
@@ -182,6 +219,15 @@ class WorldTradingData {
             }
         }
         */
+        val (request, response, result) = Fuel.get(
+                url_stock_multiSingleDayHistory,
+                listOf("symbol" to "AAPL,MSFT",
+                        "date" to "2018-01-02",
+                        "api_token" to api_token))
+                .responseString()
+        logger.debug{"Request: ${request}" }
+        logger.debug{"Response: ${response}" }
+        logger.debug{"Result: ${result.get()}" }
     }
 
     fun getHistoryFx(){
@@ -204,6 +250,16 @@ class WorldTradingData {
             }
         }
          */
+        val (request, response, result) = Fuel.get(
+                url_fx_history,
+                listOf("sort" to "newest",
+                        "base" to "USD",
+                        "convert_to" to "GBP",
+                        "api_token" to api_token))
+                .responseString()
+        logger.debug{"Request: ${request}" }
+        logger.debug{"Response: ${response}" }
+        logger.debug{"Result: ${result.get()}" }
     }
 
     fun getSingleDayFx(){
@@ -228,5 +284,14 @@ class WorldTradingData {
             ]
         }
          */
+        val (request, response, result) = Fuel.get(
+                url_fx_singleDayHistory,
+                listOf("date" to "2018-08-31",
+                        "base" to "USD",
+                        "api_token" to api_token))
+                .responseString()
+        logger.debug{"Request: ${request}" }
+        logger.debug{"Response: ${response}" }
+        logger.debug{"Result: ${result.get()}" }
     }
 }
