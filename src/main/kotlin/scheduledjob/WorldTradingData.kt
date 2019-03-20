@@ -11,6 +11,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.jackson.responseObject
+import com.github.kittinunf.fuel.json.responseJson
 import main.kotlin.config.KakfaConfig
 import main.kotlin.controller.FuelController
 import main.kotlin.pojo.httpRtn.WorldTradingData.StockRealtime
@@ -19,6 +20,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Configuration
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Controller
+import java.lang.Exception
+import java.math.BigDecimal
+import java.time.LocalDate
 
 @Configuration
 @ConfigurationProperties(prefix = "wtd")
@@ -59,7 +63,7 @@ class WorldTradingData {
 
         logger.info("The time is now ${DateTimeFormatter.ISO_LOCAL_TIME.format(LocalDateTime.now())}")
 
-        //TODO: POJOs -> map -> JSONString
+        //TODO: Figure out a way for analyse real time to The history
 
         //val fuelRtnMap = FuelController().curlByfuel("get", url_stock_realtime,  json_ReqBody)
 
@@ -119,7 +123,7 @@ class WorldTradingData {
         logger.debug{"Result: ${result}" }
     }
 
-    @Scheduled(fixedRate = 50000)
+    //@Scheduled(fixedRate = 50000)
     fun getIntraDay(){
         /*
         https://www.worldtradingdata.com/api/v1/intraday?symbol=AAPL&range=1&interval=1&api_token=demo
@@ -160,9 +164,14 @@ class WorldTradingData {
         val intraday = json.getJSONObject("intraday")
         //logger.debug{intraday.getJSONObject("2019-03-15 15:59:00")}
         kafkaTemplate.send(KakfaConfig.PRODUCER_STREAM,intraday.getJSONObject("2019-03-15 15:59:00").toString())
+        //TODO: Figure out a way for analyse real time to The history
     }
 
+    //@Scheduled(fixedRate = 5000000)
     fun getHistoryStock(){
+        var pindate = LocalDate.parse("1980-01-01")
+        var i:Long=1
+
         /*
         https://www.worldtradingdata.com/api/v1/history?symbol=AAPL&sort=newest&api_token=demo
         {
@@ -188,12 +197,49 @@ class WorldTradingData {
         val (request, response, result) = Fuel.get(
                 url_stock_history,
                 listOf("symbol" to "AAPL",
-                        "sort" to "newest",
+                        "sort" to "oldest",
                         "api_token" to api_token))
-                .responseString()
-        logger.debug{"Request: ${request}" }
-        logger.debug{"Response: ${response}" }
-        logger.debug{"Result: ${result.get()}" }
+                .responseJson()
+        //logger.debug{"Request: ${request}" }
+        //logger.debug{"Response: ${response}" }
+        //logger.debug{"Result: ${result.get().obj()}" }
+        val obj = result.get().obj()
+
+        val history = obj.getJSONObject("history")
+        var open: BigDecimal = BigDecimal(0)
+        var close: BigDecimal = BigDecimal(0)
+        var high: BigDecimal = BigDecimal(0)
+        var low: BigDecimal = BigDecimal(0)
+        var volume: BigDecimal = BigDecimal(0)
+
+        val stockname = obj.getString("name")
+        logger.debug { "history.length: ${history.length()}" }
+        while (pindate.isBefore(LocalDate.now())) {
+            try {
+                var dayObj = history.getJSONObject(pindate.toString())
+                open = dayObj.getString("open").toBigDecimal()
+                close = dayObj.getString("close").toBigDecimal()
+                high = dayObj.getString("high").toBigDecimal()
+                low = dayObj.getString("low").toBigDecimal()
+                volume = dayObj.getString("volume").toBigDecimal()
+                /*
+                logger.debug { "Record for ${pindate} is found for $stockname @ ${pindate}" }
+                logger.debug { "Open: ${open}" }
+                logger.debug { "Close: ${close}" }
+                logger.debug { "High: ${high}" }
+                logger.debug { "Low: ${low}" }
+                logger.debug { "Volume: ${volume}" }\
+                */
+
+                //TODO: Massage to Schema Format
+            } catch (e:Exception) {
+                logger.debug { "Record for ${pindate} is not found for $stockname" }
+            } finally {
+                pindate=pindate.plusDays(1)
+            }
+        }
+
+
     }
 
     fun getMultiSingleDayHistoryStock(){
@@ -228,6 +274,7 @@ class WorldTradingData {
         logger.debug{"Request: ${request}" }
         logger.debug{"Response: ${response}" }
         logger.debug{"Result: ${result.get()}" }
+        //TODO: Find a way to update the publisher to the latest
     }
 
     fun getHistoryFx(){

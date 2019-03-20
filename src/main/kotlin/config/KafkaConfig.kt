@@ -57,7 +57,6 @@ class KakfaConfig {
         return factory
     }
 
-    //TODO: Consuming Custom Messages
     // https://www.baeldung.com/spring-kafka
     //https://github.com/TechPrimers/spring-boot-kafka-consumer-example/blob/master/src/main/java/com/techprimers/kafka/springbootkafkaconsumerexample/config/KafkaConfiguration.java
 
