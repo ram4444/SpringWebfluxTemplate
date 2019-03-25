@@ -14,7 +14,9 @@ import java.util.*
 data class Node(
         @Id
         val id: ObjectId?,
-        val pinDate: Date,
+        val pinDate: Date, //Default to start of the date
+        val pinTS: Date, //The target date
+        val pinOriginTS: Date, //The origin of the estimation date, eg the last date of MA series estimate 3 days afterwards
         val timeSerialId: ObjectId,
         val createdDate: Date,
         val value: BigDecimal

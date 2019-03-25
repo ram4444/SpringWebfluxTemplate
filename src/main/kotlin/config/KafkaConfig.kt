@@ -1,5 +1,7 @@
 package main.kotlin.config
 
+import io.confluent.kafka.serializers.KafkaAvroSerializer
+import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
@@ -17,16 +19,44 @@ import java.io.Serializable
 class KakfaConfig {
 
     companion object {
-        const val PRODUCER_STREAM = "kafkatopic2"
+        const val PRODUCER_SrcNodeOpen = "src-node-open"
+        const val PRODUCER_SrcNodeClose = "src-node-close"
+        const val PRODUCER_SrcNodeHigh = "src-node-high"
+        const val PRODUCER_SrcNodeLow = "src-node-low"
+        const val PRODUCER_SrcNodeVolume = "src-node-volume"
+        const val schemaRegistryUrl = "http://localhost:8081"
     }
 
     @Bean
-    fun producerFactory(): ProducerFactory<String, String>  {
+    fun producerFactory(): ProducerFactory<String, GenericRecord>  {
+        val config: Map<String, Serializable> = mapOf(
+                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to "localhost:29092",
+                ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
+                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to KafkaAvroSerializer::class.java,
+                "schema.registry.url" to schemaRegistryUrl
+        )
+
+        return DefaultKafkaProducerFactory(config)
+    }
+
+    @Bean
+    fun producerFactory_string(): ProducerFactory<String, String>  {
         val config: Map<String, Serializable> = mapOf(
                 ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to "127.0.0.1:9092",
                 ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
-                //ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to JsonSerializer::class.java
                 ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java
+        )
+
+        return DefaultKafkaProducerFactory(config)
+    }
+
+    @Bean
+    fun producerFactory_json(): ProducerFactory<String, String>  {
+        val config: Map<String, Serializable> = mapOf(
+                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to "127.0.0.1:9092",
+                ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
+                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to JsonSerializer::class.java
+
         )
 
         return DefaultKafkaProducerFactory(config)
@@ -46,8 +76,8 @@ class KakfaConfig {
     }
 
     @Bean
-    fun KafkaTemplate(): KafkaTemplate<String, String> {
-        return KafkaTemplate<String, String>(producerFactory())
+    fun KafkaTemplate(): KafkaTemplate<String, GenericRecord> {
+        return KafkaTemplate<String, GenericRecord>(producerFactory())
     }
 
     @Bean

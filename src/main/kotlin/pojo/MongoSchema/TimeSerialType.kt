@@ -11,10 +11,10 @@ import org.springframework.data.mongodb.core.mapping.Document
 @Document(collection="TimeSerialType")
 data class TimeSerialType(
         @Id
-        val id: ObjectId?,
-        val type_name: String,
+        val id: ObjectId,
+        val type_name: String, //Topic Name of Kafka
         val category: String,
-        val paraList: List<TimeSerialTypePara>
+        val paraList: List<TimeSerialTypePara>?
         /*Category include
         Source
         Derived eg. SMA

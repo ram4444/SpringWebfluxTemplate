@@ -1,0 +1,42 @@
+{
+  "type": "record",
+  "name": "NodeSrcOpen",
+  "namespace": "main.kotlin",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string"
+    },
+    {
+      "name": "pinDate",
+      "type": "long",
+      "logicalType": "timestamp-millis"
+    },
+    {
+      "name": "pinTS",
+      "type": "long",
+      "logicalType": "timestamp-millis"
+    },
+    {
+      "name": "pinOriginTS",
+      "type": "long",
+      "logicalType": "timestamp-millis"
+    },
+    {
+      "name": "timeSerialId",
+      "type": "string"
+    },
+    {
+      "name": "createdDate",
+      "type": "long",
+      "logicalType": "timestamp-millis"
+    },
+    {
+      "name": "value",
+      "type": "bytes",
+      "logicalType": "decimal",
+      "precision": 8,
+      "scale": 2
+    }
+  ]
+}

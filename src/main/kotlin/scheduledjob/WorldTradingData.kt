@@ -14,15 +14,27 @@ import com.github.kittinunf.fuel.jackson.responseObject
 import com.github.kittinunf.fuel.json.responseJson
 import main.kotlin.config.KakfaConfig
 import main.kotlin.controller.FuelController
+import main.kotlin.pojo.MongoSchema.Node
+import main.kotlin.pojo.MongoSchema.TimeSerialType
 import main.kotlin.pojo.httpRtn.WorldTradingData.StockRealtime
+import org.apache.avro.Schema
+import org.apache.avro.generic.GenericRecord
+import org.apache.avro.generic.GenericRecordBuilder
+import org.bson.types.ObjectId
 import org.json.JSONObject
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Configuration
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Controller
+import java.io.File
 import java.lang.Exception
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZoneOffset
+import org.apache.kafka.common.utils.Bytes
+import java.util.*
+
 
 @Configuration
 @ConfigurationProperties(prefix = "wtd")
@@ -41,7 +53,16 @@ class WorldTradingData {
     private val logger = KotlinLogging.logger {}
 
     @Autowired
-    lateinit var kafkaTemplate: KafkaTemplate<String, String>
+    lateinit var kafkaTemplate: KafkaTemplate<String, GenericRecord>
+
+    val zoneId = ZoneId.systemDefault()
+    val zoneOffset = zoneId.getRules().getOffset(LocalDateTime.now())
+
+    val schema_open = Schema.Parser().parse(File("src/main/resources/avsc/node-src-open.avsc"))
+    val schema_close = Schema.Parser().parse(File("src/main/resources/avsc/node-src-close.avsc"))
+    val schema_high = Schema.Parser().parse(File("src/main/resources/avsc/node-src-high.avsc"))
+    val schema_low = Schema.Parser().parse(File("src/main/resources/avsc/node-src-low.avsc"))
+    val schema_volume = Schema.Parser().parse(File("src/main/resources/avsc/node-src-volume.avsc"))
 
     /** Example
      * This @Schedule annotation run every 5 seconds in this case. It can also
@@ -163,11 +184,11 @@ class WorldTradingData {
         val json = JSONObject(result.get())
         val intraday = json.getJSONObject("intraday")
         //logger.debug{intraday.getJSONObject("2019-03-15 15:59:00")}
-        kafkaTemplate.send(KakfaConfig.PRODUCER_STREAM,intraday.getJSONObject("2019-03-15 15:59:00").toString())
+        //kafkaTemplate.send(KakfaConfig.PRODUCER_STREAM,intraday.getJSONObject("2019-03-15 15:59:00").toString())
         //TODO: Figure out a way for analyse real time to The history
     }
 
-    //@Scheduled(fixedRate = 5000000)
+    @Scheduled(fixedRate = 5000000)
     fun getHistoryStock(){
         var pindate = LocalDate.parse("1980-01-01")
         var i:Long=1
@@ -214,6 +235,19 @@ class WorldTradingData {
 
         val stockname = obj.getString("name")
         logger.debug { "history.length: ${history.length()}" }
+
+        var nodeloopOpen:Node?
+        var nodeloopClose:Node?
+        var nodeloopHigh:Node?
+        var nodeloopLow:Node?
+        var nodeloopVolume:Node?
+        var nodeloopPinDate:Date?
+        var nodeloopPinTSOpen:Date?
+        var nodeloopPinTSClose:Date?
+        var nodeloopPinOriginTS:Date?
+        //var nodeloopPinTSHigh:Date?
+        //var nodeloopPinTSLow:Date?
+
         while (pindate.isBefore(LocalDate.now())) {
             try {
                 var dayObj = history.getJSONObject(pindate.toString())
@@ -231,9 +265,56 @@ class WorldTradingData {
                 logger.debug { "Volume: ${volume}" }\
                 */
 
+                //TODO: handle the stockname
+                val timeSerialTypeOpen: TimeSerialType = TimeSerialType(ObjectId.get() ,"src_open_${stockname}","source",null)
+                val timeSerialTypeClose: TimeSerialType = TimeSerialType(ObjectId.get() ,"src_close_${stockname}","source",null)
+                val timeSerialTypeHigh: TimeSerialType = TimeSerialType(ObjectId.get() ,"src_high_${stockname}","source",null)
+                val timeSerialTypeLow: TimeSerialType = TimeSerialType(ObjectId.get() ,"src_low_${stockname}","source",null)
+                val timeSerialTypeVolume: TimeSerialType = TimeSerialType(ObjectId.get() ,"src_volume_${stockname}","source",null)
+                //TODO: insert to db, get back the ID
                 //TODO: Massage to Schema Format
+                nodeloopPinDate = Date.from(pindate.atStartOfDay(zoneId).toInstant())
+                nodeloopPinTSOpen = Date.from(pindate.atTime(9,0).toInstant(zoneOffset))
+                nodeloopPinTSClose = Date.from(pindate.atTime(16,0).toInstant(zoneOffset))
+                //nodeloopPinTSHigh = Date.from(pindate.atTime(16,0).toInstant(zoneOffset))
+                //nodeloopPinTSLow = Date.from(pindate.atTime(16,0).toInstant(zoneOffset))
+                nodeloopOpen = Node(ObjectId.get(), nodeloopPinDate, nodeloopPinTSOpen, nodeloopPinTSOpen, timeSerialTypeOpen.id ,Date(), open)
+                nodeloopClose = Node(ObjectId.get(), nodeloopPinDate, nodeloopPinTSClose, nodeloopPinTSClose, timeSerialTypeClose.id ,Date(), close)
+                nodeloopHigh = Node(ObjectId.get(), nodeloopPinDate, nodeloopPinTSClose, nodeloopPinTSClose, timeSerialTypeHigh.id ,Date(), high)
+                nodeloopLow = Node(ObjectId.get(), nodeloopPinDate, nodeloopPinTSClose, nodeloopPinTSClose, timeSerialTypeLow.id ,Date(), low)
+                nodeloopVolume = Node(ObjectId.get(), nodeloopPinDate, nodeloopPinTSClose, nodeloopPinTSClose, timeSerialTypeVolume.id ,Date(), volume)
+
+
+                // Define Topic Name in KakfaConfig
+                //TODO: clear the topic of Kafka
+
+
+                //Please follow the local AVSC json
+                val nodeOpen = GenericRecordBuilder(schema_open).apply {
+                    set("id", ObjectId.get().toHexString())
+                    set("pinDate", nodeloopPinDate.time)
+                    set("pinTS", nodeloopPinTSOpen.time)
+                    set("pinOriginTS", nodeloopPinTSOpen.time)
+                    set("timeSerialId", timeSerialTypeOpen.id.toHexString())
+                    set("createdDate", Date().time)
+                    set("value", Bytes(byteArrayOf(open.toByte())))
+                }.build()
+
+
+
+
+
+                //TODO: put to Kafka producer, serialize the object
+                kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeOpen, nodeOpen)
+                //kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeClose,nodeloopClose)
+                //kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeHigh,nodeloopHigh)
+                //kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeLow,nodeloopLow)
+                //kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeVolume,nodeloopVolume)
+
             } catch (e:Exception) {
                 logger.debug { "Record for ${pindate} is not found for $stockname" }
+                logger.error { e.message}
+                e.printStackTrace()
             } finally {
                 pindate=pindate.plusDays(1)
             }

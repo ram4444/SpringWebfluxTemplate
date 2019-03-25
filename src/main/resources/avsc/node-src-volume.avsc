@@ -1,0 +1,42 @@
+{
+  "type": "record",
+  "name": "NodeSrcVolume",
+  "namespace": "main.kotlin",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string"
+    },
+    {
+      "name": "pinDate",
+      "type": "int",
+      "logicalType": "time-millis"
+    },
+    {
+      "name": "pinTS",
+      "type": "int",
+      "logicalType": "time-millis"
+    },
+    {
+      "name": "pinOriginTS",
+      "type": "int",
+      "logicalType": "time-millis"
+    },
+    {
+      "name": "timeSerialId",
+      "type": "string"
+    },
+    {
+      "name": "createdDate",
+      "type": "int",
+      "logicalType": "time-millis"
+    },
+    {
+      "name": "value",
+      "type": "bytes",
+      "logicalType": "decimal",
+      "precision": 8,
+      "scale": 2
+    }
+  ]
+}
