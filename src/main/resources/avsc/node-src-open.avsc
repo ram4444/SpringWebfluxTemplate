@@ -33,10 +33,7 @@
     },
     {
       "name": "value",
-      "type": "bytes",
-      "logicalType": "decimal",
-      "precision": 8,
-      "scale": 2
+      "type": "float"
     }
   ]
 }

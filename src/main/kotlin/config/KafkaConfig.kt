@@ -1,5 +1,6 @@
 package main.kotlin.config
 
+import io.confluent.kafka.serializers.KafkaAvroDeserializer
 import io.confluent.kafka.serializers.KafkaAvroSerializer
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.consumer.ConsumerConfig
@@ -63,7 +64,20 @@ class KakfaConfig {
     }
 
     @Bean
-    fun consumerFactory(): ConsumerFactory<String, String> {
+    fun consumerFactory(): ConsumerFactory<String, GenericRecord> {
+        val config: Map<String, Serializable>  = mapOf(
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to "127.0.0.1:29092",
+                ConsumerConfig.GROUP_ID_CONFIG to "foo",
+                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to KafkaAvroDeserializer::class.java,
+                "schema.registry.url" to schemaRegistryUrl
+        )
+
+        return DefaultKafkaConsumerFactory(config)
+    }
+
+    @Bean
+    fun consumerFactory_string(): ConsumerFactory<String, String> {
         val config: Map<String, Serializable>  = mapOf(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to "127.0.0.1:9092",
                 ConsumerConfig.GROUP_ID_CONFIG to "foo",
@@ -81,9 +95,16 @@ class KakfaConfig {
     }
 
     @Bean
-    fun kafkaListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String, String> {
-        val factory: ConcurrentKafkaListenerContainerFactory<String, String> = ConcurrentKafkaListenerContainerFactory();
+    fun kafkaListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String, GenericRecord> {
+        val factory: ConcurrentKafkaListenerContainerFactory<String, GenericRecord> = ConcurrentKafkaListenerContainerFactory();
         factory.setConsumerFactory(consumerFactory());
+        return factory
+    }
+
+    @Bean
+    fun kafkaListenerContainerFactory_string(): ConcurrentKafkaListenerContainerFactory<String, String> {
+        val factory: ConcurrentKafkaListenerContainerFactory<String, String> = ConcurrentKafkaListenerContainerFactory();
+        factory.setConsumerFactory(consumerFactory_string());
         return factory
     }
 

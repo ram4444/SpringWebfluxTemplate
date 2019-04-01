@@ -17,9 +17,13 @@ import main.kotlin.controller.FuelController
 import main.kotlin.pojo.MongoSchema.Node
 import main.kotlin.pojo.MongoSchema.TimeSerialType
 import main.kotlin.pojo.httpRtn.WorldTradingData.StockRealtime
+import org.apache.avro.LogicalTypes
 import org.apache.avro.Schema
+import org.apache.avro.generic.GenericDatumWriter
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.generic.GenericRecordBuilder
+import org.apache.kafka.common.serialization.ByteArraySerializer
+import org.apache.kafka.common.serialization.Serdes
 import org.bson.types.ObjectId
 import org.json.JSONObject
 import org.springframework.beans.factory.annotation.Autowired
@@ -33,6 +37,11 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
 import org.apache.kafka.common.utils.Bytes
+import java.io.ByteArrayOutputStream
+import java.math.BigInteger
+import java.math.RoundingMode
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.util.*
 
 
@@ -247,15 +256,22 @@ class WorldTradingData {
         var nodeloopPinOriginTS:Date?
         //var nodeloopPinTSHigh:Date?
         //var nodeloopPinTSLow:Date?
+        var n:Int=0
 
         while (pindate.isBefore(LocalDate.now())) {
             try {
-                var dayObj = history.getJSONObject(pindate.toString())
-                open = dayObj.getString("open").toBigDecimal()
-                close = dayObj.getString("close").toBigDecimal()
-                high = dayObj.getString("high").toBigDecimal()
-                low = dayObj.getString("low").toBigDecimal()
-                volume = dayObj.getString("volume").toBigDecimal()
+                var dayObj :JSONObject = JSONObject()
+                try {
+                    dayObj = history.getJSONObject(pindate.toString())
+                } catch (e:Exception) {
+                    logger.info { "-------------------${pindate} have no record-------------------" }
+                    //throw e.fillInStackTrace()
+                }
+                open = dayObj.getString("open").toBigDecimal().setScale(2, BigDecimal.ROUND_HALF_UP)
+                close = dayObj.getString("close").toBigDecimal().setScale(2, BigDecimal.ROUND_HALF_UP)
+                high = dayObj.getString("high").toBigDecimal().setScale(2, BigDecimal.ROUND_HALF_UP)
+                low = dayObj.getString("low").toBigDecimal().setScale(2, BigDecimal.ROUND_HALF_UP)
+                volume = dayObj.getString("volume").toBigDecimal().setScale(2,BigDecimal.ROUND_HALF_UP)
                 /*
                 logger.debug { "Record for ${pindate} is found for $stockname @ ${pindate}" }
                 logger.debug { "Open: ${open}" }
@@ -287,9 +303,26 @@ class WorldTradingData {
 
                 // Define Topic Name in KakfaConfig
                 //TODO: clear the topic of Kafka
-
-
+                //var ba: ByteArray = ByteArray(4) {open.toByte()}
+                //var byteBuffer: ByteBuffer = ByteBuffer.allocate(8).order(ByteOrder.BIG_ENDIAN).putInt(4321)
+                //println("----------------TO BYTE")
+                //println(open.toByte())
+                //println(open.toFloat())
+                //var logty = LogicalTypes.decimal(8,2)
+                //logty.
                 //Please follow the local AVSC json
+                /*
+                var lp:Int=0
+                try {
+                    while (true) {
+                        println(byteBuffer[lp])
+                        lp++
+                    }
+                } catch (e:Exception) {
+                    println("END loop the buffer")
+                }
+                */
+
                 val nodeOpen = GenericRecordBuilder(schema_open).apply {
                     set("id", ObjectId.get().toHexString())
                     set("pinDate", nodeloopPinDate.time)
@@ -297,8 +330,22 @@ class WorldTradingData {
                     set("pinOriginTS", nodeloopPinTSOpen.time)
                     set("timeSerialId", timeSerialTypeOpen.id.toHexString())
                     set("createdDate", Date().time)
-                    set("value", Bytes(byteArrayOf(open.toByte())))
+                    set("value", open.toFloat())
+                    //set("value", ByteBuffer.wrap(ba.asUByteArray().asByteArray()))
+
                 }.build()
+
+                /*
+                val nodeOpen = GenericRecordBuilder(schema_open) {
+                    set("id", ObjectId.get().toHexString())
+                    set("pinDate", nodeloopPinDate.time)
+                    set("pinTS", nodeloopPinTSOpen.time)
+                    set("pinOriginTS", nodeloopPinTSOpen.time)
+                    set("timeSerialId", timeSerialTypeOpen.id.toHexString())
+                    set("createdDate", Date().time)
+                    //set("value", BigDecimal(10,2))
+                }.build()
+                */
 
 
 
@@ -306,17 +353,24 @@ class WorldTradingData {
 
                 //TODO: put to Kafka producer, serialize the object
                 kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeOpen, nodeOpen)
+                /*
+                if (open.compareTo(BigDecimal(100)) == 1) {
+                    kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeOpen, nodeOpen)
+                    n++
+                }
+                */
                 //kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeClose,nodeloopClose)
                 //kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeHigh,nodeloopHigh)
                 //kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeLow,nodeloopLow)
                 //kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeVolume,nodeloopVolume)
 
             } catch (e:Exception) {
-                logger.debug { "Record for ${pindate} is not found for $stockname" }
+                logger.debug { "Error when executing ${pindate} of Stock $stockname: " }
                 logger.error { e.message}
                 e.printStackTrace()
             } finally {
                 pindate=pindate.plusDays(1)
+
             }
         }
 
