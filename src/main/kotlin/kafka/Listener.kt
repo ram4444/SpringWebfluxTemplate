@@ -1,8 +1,10 @@
 package main.kotlin.kafka
 
+import mu.KotlinLogging
 import org.apache.avro.generic.GenericRecord
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.stereotype.Service
+import java.lang.Math.abs
 
 @Service
 class Listener {
@@ -13,6 +15,7 @@ class Listener {
     val rstGoldRatio3 = (1-rstGoldRatio1-rstGoldRatio2)*goldenRatio
     val rstGoldRatio4 = (1-rstGoldRatio1-rstGoldRatio2-rstGoldRatio3)*goldenRatio
     val rstGoldRatio5 = (1-rstGoldRatio1-rstGoldRatio2-rstGoldRatio3-rstGoldRatio4)*goldenRatio
+    val rstGoldRatioList: List<Float> = listOf(rstGoldRatio5,rstGoldRatio4,rstGoldRatio3,rstGoldRatio2,rstGoldRatio1)
 
     val rstGoldRatioMin1 = goldenRatioMin
     val rstGoldRatioMin2 = (1-rstGoldRatioMin1)*goldenRatioMin
@@ -22,17 +25,39 @@ class Listener {
     val rstGoldRatioMin6 = (1-rstGoldRatioMin1-rstGoldRatioMin2-rstGoldRatioMin3-rstGoldRatioMin4-rstGoldRatioMin5)*goldenRatioMin
     val rstGoldRatioMin7 = (1-rstGoldRatioMin1-rstGoldRatioMin2-rstGoldRatioMin3-rstGoldRatioMin4-rstGoldRatioMin5-rstGoldRatioMin6)*goldenRatioMin
     val rstGoldRatioMin8 = (1-rstGoldRatioMin1-rstGoldRatioMin2-rstGoldRatioMin3-rstGoldRatioMin4-rstGoldRatioMin5-rstGoldRatioMin6-rstGoldRatioMin7)*goldenRatioMin
+    val rstGoldRatioMinList: List<Float> = listOf(rstGoldRatioMin8,rstGoldRatioMin7,rstGoldRatioMin6,rstGoldRatioMin5,rstGoldRatioMin4,rstGoldRatioMin3,rstGoldRatioMin2,rstGoldRatioMin1)
 
+    var loopIndex:Int=0
     var currentValue = 0F
+
     companion object valueStack {
 
         var lastSrcValue:Float?=null
         var lastDeltaValue:Float?=null
+        var lastGRWA:Float?=null
+        var lastGRWASort:Float?=null
+        var lastGRWAMin:Float?=null
+        var lastGRWAMinSort:Float?=null
+
+        var lastPredict7when6:Float?=null
+        var lastpredict7when6withDeltaGRWA:Float?=null
+        var lastPredict7when6Sort:Float?=null
+        var lastpredict7when6withDeltaGRWASort:Float?=null
 
         var loopListSrcValue4GRWA:MutableList<Float> = mutableListOf()
         var loopListSrcValue4GRWAMin:MutableList<Float> = mutableListOf()
         var loopListSrcValue4GRWASort:MutableList<Float> = mutableListOf()
         var loopListSrcValue4GRWAMinSort:MutableList<Float> = mutableListOf()
+
+        var loopListSrcValue4DeltaGRWA:MutableList<Float> = mutableListOf()
+        var loopListSrcValue4DeltaGRWAMin:MutableList<Float> = mutableListOf()
+        var loopListSrcValue4DeltaGRWASort:MutableList<Float> = mutableListOf()
+        var loopListSrcValue4DeltaGRWAMinSort:MutableList<Float> = mutableListOf()
+
+        var sortIndexMap4GRWADeltaSort:MutableMap<Float,Float> =mutableMapOf()
+        var sortIndexMap4GRWADeltaMinSort:MutableMap<Float,Float> =mutableMapOf()
+
+
 
         var loopListGRWAComponent:MutableList<Float> = mutableListOf()
         var loopListGRWAMinComponent:MutableList<Float> = mutableListOf()
@@ -53,6 +78,7 @@ class Listener {
         var deltaValue: Float? = null
         var deltaValuePcnt: Float? = null
         var rocDeltaValue: Float? = null
+
         var GRWA: Float? = null
         var deltaGRWA: Float? = null
         var GRWAMin: Float? = null
@@ -61,14 +87,37 @@ class Listener {
         var deltaGRWASort: Float? = null
         var GRWAMinSort: Float? = null
         var deltaGRWAMinSort: Float? = null
+
+        var disperSrcPredictGRWARemainPcnt: Float? = null
+        var disperSrcPredictGRWAwithDeltaPcnt: Float? = null
+        var disperSrcPredictGRWASortRemainPcnt: Float? = null
+        var disperSrcPredictGRWASortwithDeltaPcnt: Float? = null
+
+        var disperSrcPredictGRWAMinRemainPcnt: Float? = null
+        var disperSrcPredictGRWAMinwithDeltaPcnt: Float? = null
+        var disperSrcPredictGRWAMinSortRemainPcnt: Float? = null
+        var disperSrcPredictGRWAMinSortwithDeltaPcnt: Float? = null
     }
+
+    private val logger = KotlinLogging.logger {}
 
     //TODO: para the topic and group
     @KafkaListener(topics = ["src-node-open"], groupId = "src")
     fun listen(message: GenericRecord) {
-        //println("-----consumer start----------")
-        //println("-----consumer end----------")
-        //TODO: Consuming Custom Messages
+        //println("-----consumer receive msg from kafka Topic src-node-open----------")
+
+        //-------------debug are for Last insert value---------------
+        logger.debug{"--------------Last insert Value---------------"}
+        logger.debug{"lastSrcValue: ${lastSrcValue}"}
+        logger.debug{"lastGRWA: ${lastGRWA}"}
+        logger.debug{"lastGRWASort: ${lastGRWASort}"}
+        logger.debug{"lastGRWAMin: ${lastGRWAMin}"}
+        logger.debug{"lastGRWAMinSort: ${lastGRWAMinSort}"}
+        logger.debug{"lastPredict7when6: ${lastPredict7when6}"}
+        logger.debug{"lastpredict7when6withDeltaGRWA: ${lastpredict7when6withDeltaGRWA}"}
+        logger.debug{"lastpredict7when6withDeltaGRWASort: ${lastpredict7when6withDeltaGRWASort}"}
+
+        logger.debug{"-----------------------------------------------"}
 
         currentValue=message.get("value") as Float
         var rowValue = RowValue
@@ -79,35 +128,179 @@ class Listener {
         loopListSrcValue4GRWASort.add(currentValue)
         loopListSrcValue4GRWAMinSort.add(currentValue)
 
+        loopListSrcValue4DeltaGRWA.add(currentValue)
+        loopListSrcValue4DeltaGRWAMin.add(currentValue)
+        loopListSrcValue4DeltaGRWASort.add(currentValue)
+        loopListSrcValue4DeltaGRWAMinSort.add(currentValue)
+
         if (lastSrcValue != null) {
             rowValue.deltaValue = currentValue - lastSrcValue!!
             rowValue.deltaValuePcnt = rowValue.deltaValue!! / lastSrcValue!!
             if (lastDeltaValue != null) {
                 rowValue.rocDeltaValue = rowValue.deltaValue!! - lastDeltaValue!!
             }
-            lastSrcValue = currentValue
+
             lastDeltaValue = rowValue.deltaValue
+            //sortIndexMap4GRWADeltaSort.toSortedMap()
+            sortIndexMap4GRWADeltaSort.put(abs(rowValue.deltaValuePcnt!!) , currentValue)
+
+        }
+        lastSrcValue = currentValue
+
+        /* When Reading the 5th value
+            -Sort the map of (abs(deltaValuePcnt) , src)
+            -Calculate GRWA
+            -Calculate GRWASort
+            When Reading the 6th value
+                -Calculate the deltaGRWA
+                -Calculate the deltaGRWAsort
+         */
+        //Sort the map of (abs(deltaValuePcnt) , src)
+        var smallestKey= 0F
+        var earliestKey:Float?=null
+        var loopCnt=0
+
+        if (sortIndexMap4GRWADeltaSort.size>4) {
+
+            sortIndexMap4GRWADeltaSort.iterator().forEach {
+                if (loopCnt==0) {
+                    earliestKey=it.key
+                }
+            }
+            sortIndexMap4GRWADeltaSort = sortIndexMap4GRWADeltaSort.toSortedMap(compareByDescending { it })
+            sortIndexMap4GRWADeltaSort.iterator().forEach {
+                loopCnt++
+                if (loopCnt==sortIndexMap4GRWADeltaSort.size) {
+                    smallestKey=it.key
+                    //This key is for remove the smallest Element of the MAP
+                }
+            }
         }
 
         if (loopListSrcValue4GRWA.size>4) {
 
             //Calculate GRWA
+            rowValue.GRWA=0F
+            loopIndex=0
             for (loopSrcValue in loopListSrcValue4GRWA) {
-                //TODO: put the above value into a List
-                //loopSrcValue*goldratioCurrent
+                //logger.debug { "------Calculation of GRWA---------------" }
+                //logger.debug { "loopSrcValue: ${loopSrcValue}" }
+                //logger.debug { "rowValue.GRWA: ${rowValue.GRWA}" }
+                //logger.debug { "rstGoldRatioList[loopIndex]: ${rstGoldRatioList[loopIndex]}" }
+                rowValue.GRWA = rowValue.GRWA!!+(loopSrcValue*rstGoldRatioList[loopIndex])
+                loopIndex++
             }
+            //logger.debug { "------Calculation of GRWA END----------Result: ${rowValue.GRWA}-----" }
+            loopIndex=0
 
-            //Copy & Sort
-            loopListSrcValue4GRWASort = loopListSrcValue4GRWA
-            loopListSrcValue4GRWASort.sortDescending()
             //Calculate GRWASort
+            loopListSrcValue4GRWASort = loopListSrcValue4GRWA.toMutableList()
+            rowValue.GRWASort=0F
+            logger.debug { "------------sortIndexMap4GRWADeltaSort:-------------" }
+            sortIndexMap4GRWADeltaSort.iterator().forEach {
+                //REMARKS: The first time calculation of GRWASort is not correct since we only have 4 value for the Delta
+                logger.debug { "${rowValue.GRWASort} \t  ${it.key} \t ${it.value} \t ${rstGoldRatioList[loopIndex]}"}
+                rowValue.GRWASort = rowValue.GRWASort!!+it.value*rstGoldRatioList[rstGoldRatioList.size-1-loopIndex]
+                loopIndex++
+            }
+            loopIndex=0
 
-            //arrValue.removeAt(0)
+            //When Reading the 6th value
+            if (loopListSrcValue4DeltaGRWA.size>5) {
+                //Calculate the deltaGRWA
+                if (lastGRWA != null) {
+                    rowValue.deltaGRWA = rowValue.GRWA!! - lastGRWA!!
+                    if (rowValue.deltaGRWA!! >0) {
+                        //Raising
+                    } else {
+                        //Dropping
+                    }
+
+                    //For GRWA Remain same
+                    //loopListSrcValue4GRWA[0,1] will be dropped
+                    val predict7when6=(rowValue.GRWA!!-(loopListSrcValue4DeltaGRWA[2]*rstGoldRatio5+loopListSrcValue4DeltaGRWA[3]*rstGoldRatio4+loopListSrcValue4DeltaGRWA[4]*rstGoldRatio3+loopListSrcValue4DeltaGRWA[5]*rstGoldRatio2))/rstGoldRatio1
+                    if (lastPredict7when6 != null){
+                        //Calculate the disperency between actual and prediction of last time
+                        rowValue.disperSrcPredictGRWARemainPcnt=(lastPredict7when6!!-currentValue)/currentValue
+
+                    }
+                    //update the last predict
+                    lastPredict7when6 = predict7when6
+
+                    //For GRWA keep its down or up trend
+                    val predict7when6withDeltaGRWA=(rowValue.GRWA!!+rowValue.deltaGRWA!!-(loopListSrcValue4DeltaGRWA[2]*rstGoldRatio5+loopListSrcValue4DeltaGRWA[3]*rstGoldRatio4+loopListSrcValue4DeltaGRWA[4]*rstGoldRatio3+loopListSrcValue4DeltaGRWA[5]*rstGoldRatio2))/rstGoldRatio1
+                    if (lastpredict7when6withDeltaGRWA != null){
+                        //Calculate the disperency between actual and prediction of last time
+                        rowValue.disperSrcPredictGRWAwithDeltaPcnt=(predict7when6withDeltaGRWA!!-currentValue)/currentValue
+                    }
+                    lastpredict7when6withDeltaGRWA = predict7when6withDeltaGRWA
+                }
+
+
+                //--------------------------------------------------------------------------------------------
+                //Calculate the deltaGRWAsort
+                /*
+                if (lastGRWASort != null) {
+                    rowValue.deltaGRWASort = rowValue.GRWASort!! - lastGRWASort!!
+                    if (rowValue.deltaGRWASort!! >0) {
+                        //Raising
+                    } else {
+                        //Dropping
+                    }
+                }
+                lastGRWASort=rowValue.GRWASort
+                */
+
+                loopListSrcValue4DeltaGRWA.removeAt(0)
+                loopListSrcValue4DeltaGRWASort.removeAt(0)
+
+            }
+            lastGRWA=rowValue.GRWA
+            lastGRWASort=rowValue.GRWASort
+            //------------------------------------------------------------------
+
+            //POP out the First-most inserted element
+            loopListSrcValue4GRWA.removeAt(0)
+            loopListSrcValue4GRWASort.removeAt(0)
+
+            sortIndexMap4GRWADeltaSort.remove(earliestKey)
+
         }
-
+        //TODO: For GRWAMin
+        /*
         if (loopListSrcValue4GRWAMin.size>7) {
 
         }
+        */
+        debugArea(rowValue)
+        //println("-----consumer end process end for Topic src-node-open----------")
+    }
 
+    fun debugArea(rowValue:RowValue) {
+        logger.debug{" -------------Current Value to be insert--------------"}
+        logger.debug{" srcValue: \t\t\t ${rowValue.srcValue}"}
+        logger.debug{" deltaValue: \t\t\t ${rowValue.deltaValue}"}
+        logger.debug{" deltaValuePcnt: \t\t\t ${rowValue.deltaValuePcnt}"}
+        logger.debug{" rocDeltaValue: \t\t\t ${rowValue.rocDeltaValue}"}
+
+        logger.debug{" GRWA: \t\t\t ${rowValue.GRWA}"}
+        logger.debug{" deltaGRWA: \t\t\t ${rowValue.deltaGRWA}"}
+        logger.debug{" GRWAMin: \t\t\t ${rowValue.GRWAMin}"}
+        logger.debug{" deltaGRWAMin: \t\t\t ${rowValue.deltaGRWAMin}"}
+        logger.debug{" GRWASort: \t\t\t ${rowValue.GRWASort}"}
+        logger.debug{" deltaGRWASort: \t\t\t ${rowValue.deltaGRWASort}"}
+        logger.debug{" GRWAMinSort: \t\t\t ${rowValue.GRWAMinSort}"}
+        logger.debug{" deltaGRWAMinSort: \t\t\t ${rowValue.deltaGRWAMinSort}"}
+
+        logger.debug{" disperSrcPredictGRWARemainPcnt: \t\t\t ${rowValue.disperSrcPredictGRWARemainPcnt}"}
+        logger.debug{" disperSrcPredictGRWAwithDeltaPcnt: \t\t\t ${rowValue.disperSrcPredictGRWAwithDeltaPcnt}"}
+        logger.debug{" disperSrcPredictGRWASortRemainPcnt: \t\t\t ${rowValue.disperSrcPredictGRWASortRemainPcnt}"}
+        logger.debug{" disperSrcPredictGRWASortwithDeltaPcnt: \t\t\t ${rowValue.disperSrcPredictGRWASortwithDeltaPcnt}"}
+
+        logger.debug{" disperSrcPredictGRWAMinRemainPcnt: \t\t\t ${rowValue.disperSrcPredictGRWAMinRemainPcnt}"}
+        logger.debug{" disperSrcPredictGRWAMinwithDeltaPcnt: \t\t\t ${rowValue.disperSrcPredictGRWAMinwithDeltaPcnt}"}
+        logger.debug{" disperSrcPredictGRWAMinSortRemainPcnt: \t\t\t ${rowValue.disperSrcPredictGRWAMinSortRemainPcnt}"}
+        logger.debug{" disperSrcPredictGRWAMinSortwithDeltaPcnt: \t\t\t ${rowValue.disperSrcPredictGRWAMinSortwithDeltaPcnt}"}
+        logger.debug{" -------------End of Current Value to be insert--------------"}
     }
 }

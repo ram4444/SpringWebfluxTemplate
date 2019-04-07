@@ -258,7 +258,7 @@ class WorldTradingData {
         //var nodeloopPinTSLow:Date?
         var n:Int=0
 
-        while (pindate.isBefore(LocalDate.now())) {
+        while (pindate.isBefore(LocalDate.now()) ) {
             try {
                 var dayObj :JSONObject = JSONObject()
                 try {
@@ -372,9 +372,8 @@ class WorldTradingData {
                 pindate=pindate.plusDays(1)
 
             }
+            //n++
         }
-
-
     }
 
     fun getMultiSingleDayHistoryStock(){
