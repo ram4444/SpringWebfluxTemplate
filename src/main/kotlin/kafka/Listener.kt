@@ -41,8 +41,11 @@ class Listener {
 
         var lastPredict7when6:Float?=null
         var lastpredict7when6withDeltaGRWA:Float?=null
+        var lastPredict7when6MidPt:Float?=null
+
         var lastPredict7when6Sort:Float?=null
         var lastpredict7when6withDeltaGRWASort:Float?=null
+        var lastPredict7when6SortMidPt:Float?=null
 
         var loopListSrcValue4GRWA:MutableList<Float> = mutableListOf()
         var loopListSrcValue4GRWAMin:MutableList<Float> = mutableListOf()
@@ -54,11 +57,13 @@ class Listener {
         var loopListSrcValue4DeltaGRWASort:MutableList<Float> = mutableListOf()
         var loopListSrcValue4DeltaGRWAMinSort:MutableList<Float> = mutableListOf()
 
+
+        var indexMap4GRWADeltaSort:MutableMap<Float,Float> =mutableMapOf()
+        var indexMap4GRWADeltaMinSort:MutableMap<Float,Float> =mutableMapOf()
         var sortIndexMap4GRWADeltaSort:MutableMap<Float,Float> =mutableMapOf()
         var sortIndexMap4GRWADeltaMinSort:MutableMap<Float,Float> =mutableMapOf()
 
-
-
+        /*
         var loopListGRWAComponent:MutableList<Float> = mutableListOf()
         var loopListGRWAMinComponent:MutableList<Float> = mutableListOf()
         var loopListGRWASortComponent:MutableList<Float> = mutableListOf()
@@ -71,6 +76,7 @@ class Listener {
         var predictGRWASortwDelta:Float? = null
         var predictGRWAMinSortEqual:Float? = null
         var predictGRWAMinSortwDelta:Float? = null
+         */
     }
 
     object RowValue {
@@ -108,15 +114,13 @@ class Listener {
 
         //-------------debug are for Last insert value---------------
         logger.debug{"--------------Last insert Value---------------"}
-        logger.debug{"lastSrcValue: ${lastSrcValue}"}
-        logger.debug{"lastGRWA: ${lastGRWA}"}
-        logger.debug{"lastGRWASort: ${lastGRWASort}"}
-        logger.debug{"lastGRWAMin: ${lastGRWAMin}"}
-        logger.debug{"lastGRWAMinSort: ${lastGRWAMinSort}"}
-        logger.debug{"lastPredict7when6: ${lastPredict7when6}"}
-        logger.debug{"lastpredict7when6withDeltaGRWA: ${lastpredict7when6withDeltaGRWA}"}
-        logger.debug{"lastpredict7when6withDeltaGRWASort: ${lastpredict7when6withDeltaGRWASort}"}
-
+        logger.debug{"lastSrcValue: \t\t\t\t ${lastSrcValue}"}
+        logger.debug{"lastGRWA: \t\t\t\t ${lastGRWA}"}
+        logger.debug{"lastGRWASort: \t\t\t\t ${lastGRWASort}"}
+        logger.debug{"lastGRWAMin: \t\t\t\t ${lastGRWAMin}"}
+        logger.debug{"lastGRWAMinSort: \t\t\t\t ${lastGRWAMinSort}"}
+        logger.debug{"lastPredict7when6: \t\t\t\t ${lastPredict7when6} \t ${lastpredict7when6withDeltaGRWA} \t ${lastPredict7when6MidPt} "}
+        logger.debug{"lastPredict7when6Sort: \t\t\t\t ${lastPredict7when6Sort} \t ${lastpredict7when6withDeltaGRWASort} \t ${lastPredict7when6SortMidPt}"}
         logger.debug{"-----------------------------------------------"}
 
         currentValue=message.get("value") as Float
@@ -142,7 +146,7 @@ class Listener {
 
             lastDeltaValue = rowValue.deltaValue
             //sortIndexMap4GRWADeltaSort.toSortedMap()
-            sortIndexMap4GRWADeltaSort.put(abs(rowValue.deltaValuePcnt!!) , currentValue)
+            indexMap4GRWADeltaSort.put(abs(rowValue.deltaValuePcnt!!) , currentValue)
 
         }
         lastSrcValue = currentValue
@@ -160,14 +164,17 @@ class Listener {
         var earliestKey:Float?=null
         var loopCnt=0
 
-        if (sortIndexMap4GRWADeltaSort.size>4) {
+        if (indexMap4GRWADeltaSort.size>4) {
 
-            sortIndexMap4GRWADeltaSort.iterator().forEach {
+            indexMap4GRWADeltaSort.iterator().forEach {
                 if (loopCnt==0) {
                     earliestKey=it.key
+                    loopCnt++
                 }
             }
-            sortIndexMap4GRWADeltaSort = sortIndexMap4GRWADeltaSort.toSortedMap(compareByDescending { it })
+            loopCnt==0
+
+            sortIndexMap4GRWADeltaSort = indexMap4GRWADeltaSort.toSortedMap(compareByDescending { it })
             sortIndexMap4GRWADeltaSort.iterator().forEach {
                 loopCnt++
                 if (loopCnt==sortIndexMap4GRWADeltaSort.size) {
@@ -196,10 +203,10 @@ class Listener {
             //Calculate GRWASort
             loopListSrcValue4GRWASort = loopListSrcValue4GRWA.toMutableList()
             rowValue.GRWASort=0F
-            logger.debug { "------------sortIndexMap4GRWADeltaSort:-------------" }
+            //logger.debug { "------------sortIndexMap4GRWADeltaSort:-------------" }
             sortIndexMap4GRWADeltaSort.iterator().forEach {
                 //REMARKS: The first time calculation of GRWASort is not correct since we only have 4 value for the Delta
-                logger.debug { "${rowValue.GRWASort} \t  ${it.key} \t ${it.value} \t ${rstGoldRatioList[loopIndex]}"}
+                //logger.debug { "${rowValue.GRWASort} \t  ${it.key} \t ${it.value} \t ${rstGoldRatioList[rstGoldRatioList.size-1-loopIndex]}"}
                 rowValue.GRWASort = rowValue.GRWASort!!+it.value*rstGoldRatioList[rstGoldRatioList.size-1-loopIndex]
                 loopIndex++
             }
@@ -231,15 +238,16 @@ class Listener {
                     val predict7when6withDeltaGRWA=(rowValue.GRWA!!+rowValue.deltaGRWA!!-(loopListSrcValue4DeltaGRWA[2]*rstGoldRatio5+loopListSrcValue4DeltaGRWA[3]*rstGoldRatio4+loopListSrcValue4DeltaGRWA[4]*rstGoldRatio3+loopListSrcValue4DeltaGRWA[5]*rstGoldRatio2))/rstGoldRatio1
                     if (lastpredict7when6withDeltaGRWA != null){
                         //Calculate the disperency between actual and prediction of last time
-                        rowValue.disperSrcPredictGRWAwithDeltaPcnt=(predict7when6withDeltaGRWA!!-currentValue)/currentValue
+                        rowValue.disperSrcPredictGRWAwithDeltaPcnt=(lastpredict7when6withDeltaGRWA!!-currentValue)/currentValue
                     }
                     lastpredict7when6withDeltaGRWA = predict7when6withDeltaGRWA
+                    lastPredict7when6MidPt = (predict7when6 + predict7when6withDeltaGRWA)/2
                 }
 
 
                 //--------------------------------------------------------------------------------------------
                 //Calculate the deltaGRWAsort
-                /*
+
                 if (lastGRWASort != null) {
                     rowValue.deltaGRWASort = rowValue.GRWASort!! - lastGRWASort!!
                     if (rowValue.deltaGRWASort!! >0) {
@@ -247,9 +255,31 @@ class Listener {
                     } else {
                         //Dropping
                     }
+
+                    //For GRWASort Remain same
+                    //loopListSrcValue4GRWASort[0,1] will be dropped
+                    val predict7when6Sort=(rowValue.GRWASort!!-(loopListSrcValue4DeltaGRWASort[2]*rstGoldRatio5+loopListSrcValue4DeltaGRWASort[3]*rstGoldRatio4+loopListSrcValue4DeltaGRWASort[4]*rstGoldRatio3+loopListSrcValue4DeltaGRWASort[5]*rstGoldRatio2))/rstGoldRatio1
+                    if (lastPredict7when6Sort != null){
+                        //Calculate the disperency between actual and prediction of last time
+                        rowValue.disperSrcPredictGRWASortRemainPcnt=(lastPredict7when6Sort!!-currentValue)/currentValue
+
+                    }
+                    //update the last predict
+                    lastPredict7when6Sort = predict7when6Sort
+
+                    //For GRWASort keep its down or up trend
+                    val predict7when6withDeltaGRWASort=(rowValue.GRWASort!!+rowValue.deltaGRWASort!!-(loopListSrcValue4DeltaGRWASort[2]*rstGoldRatio5+loopListSrcValue4DeltaGRWASort[3]*rstGoldRatio4+loopListSrcValue4DeltaGRWASort[4]*rstGoldRatio3+loopListSrcValue4DeltaGRWASort[5]*rstGoldRatio2))/rstGoldRatio1
+                    if (lastpredict7when6withDeltaGRWASort != null){
+                        //Calculate the disperency between actual and prediction of last time
+                        rowValue.disperSrcPredictGRWASortwithDeltaPcnt=(lastpredict7when6withDeltaGRWASort!!-currentValue)/currentValue
+                    }
+                    lastpredict7when6withDeltaGRWASort = predict7when6withDeltaGRWASort
+
+                    lastPredict7when6SortMidPt = (predict7when6Sort + predict7when6withDeltaGRWASort)/2
+
                 }
                 lastGRWASort=rowValue.GRWASort
-                */
+
 
                 loopListSrcValue4DeltaGRWA.removeAt(0)
                 loopListSrcValue4DeltaGRWASort.removeAt(0)
@@ -263,7 +293,7 @@ class Listener {
             loopListSrcValue4GRWA.removeAt(0)
             loopListSrcValue4GRWASort.removeAt(0)
 
-            sortIndexMap4GRWADeltaSort.remove(earliestKey)
+            indexMap4GRWADeltaSort.remove(earliestKey)
 
         }
         //TODO: For GRWAMin

@@ -197,7 +197,7 @@ class WorldTradingData {
         //TODO: Figure out a way for analyse real time to The history
     }
 
-    @Scheduled(fixedRate = 5000000)
+    //@Scheduled(fixedRate = 5000000)
     fun getHistoryStock(){
         var pindate = LocalDate.parse("1980-01-01")
         var i:Long=1
