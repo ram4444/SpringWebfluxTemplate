@@ -14,6 +14,7 @@ import com.github.kittinunf.fuel.jackson.responseObject
 import com.github.kittinunf.fuel.json.responseJson
 import main.kotlin.config.KakfaConfig
 import main.kotlin.controller.FuelController
+import main.kotlin.kafka.Listener
 import main.kotlin.pojo.MongoSchema.Node
 import main.kotlin.pojo.MongoSchema.TimeSerialType
 import main.kotlin.pojo.httpRtn.WorldTradingData.StockRealtime
@@ -87,13 +88,47 @@ class WorldTradingData {
      */
     //@Scheduled(fixedRate = 50000)
     fun getRealTimeStock(){
-
+        /*
+        {
+            "symbol": "0992.HK",
+            "name": "Lenovo Group Limited",
+            "currency": "HKD",
+            "price": "7.01",
+            "price_open": "6.91",
+            "day_high": "7.07",
+            "day_low": "6.86",
+            "52_week_high": "7.40",
+            "52_week_low": "3.53",
+            "day_change": "0.06",
+            "change_pct": "0.86",
+            "close_yesterday": "6.95",
+            "market_cap": "10570450633",
+            "volume": "37536869",
+            "volume_avg": "63251735",
+            "shares": "12014791614",
+            "stock_exchange_long": "Hong Kong Stock Exchange",
+            "stock_exchange_short": "HKEX",
+            "timezone": "LMT",
+            "timezone_name": "Asia/Hong_Kong",
+            "gmt_offset": "27402",
+            "last_trade_time": "2019-04-09 16:08:22"
+        }
+         */
         val json_ReqBody:String
         val json_map_rtnStr:String
 
         logger.info("The time is now ${DateTimeFormatter.ISO_LOCAL_TIME.format(LocalDateTime.now())}")
 
-        //TODO: Figure out a way for analyse real time to The history
+        // TODO: Keep querying the API and put to Kafka Producer
+        // TODO: Kafka consumer get the last prediction for open high low close etc
+        // TODO: conclude a current trend
+        // TODO: adjust the prediction
+
+        // TODO: make desision for long and short
+
+        // TODO: Use a better source of data for real time
+
+        // TODO: Think a way to analysis multiple stock together
 
         //val fuelRtnMap = FuelController().curlByfuel("get", url_stock_realtime,  json_ReqBody)
 
@@ -120,6 +155,10 @@ class WorldTradingData {
         logger.debug{"Response: ${response}" }
         logger.debug{"Result: ${result}" }
         */
+
+        //TODO: put to Kafka producer, serialize the object
+        //kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeOpen, nodeOpen)
+
     }
 
     fun getRealTimeFx(){
@@ -347,12 +386,8 @@ class WorldTradingData {
                 }.build()
                 */
 
-
-
-
-
                 //TODO: put to Kafka producer, serialize the object
-                kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeOpen, nodeOpen)
+                //kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeOpen, nodeOpen)
                 /*
                 if (open.compareTo(BigDecimal(100)) == 1) {
                     kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeOpen, nodeOpen)
@@ -363,6 +398,7 @@ class WorldTradingData {
                 //kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeHigh,nodeloopHigh)
                 //kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeLow,nodeloopLow)
                 //kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeVolume,nodeloopVolume)
+                Listener.loopAnalyseAndStore(nodeloopOpen,nodeloopClose,nodeloopHigh,nodeloopLow,nodeloopVolume)
 
             } catch (e:Exception) {
                 logger.debug { "Error when executing ${pindate} of Stock $stockname: " }

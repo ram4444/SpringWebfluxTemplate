@@ -5,6 +5,7 @@ import org.apache.avro.generic.GenericRecord
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.stereotype.Service
 import java.lang.Math.abs
+import main.kotlin.pojo.MongoSchema.Node
 
 @Service
 class Listener {
@@ -34,6 +35,7 @@ class Listener {
 
         var lastSrcValue:Float?=null
         var lastDeltaValue:Float?=null
+        var lastRocDeltaValue:Float?=null //TODO:Get the lastRocDeltaValue
         var lastGRWA:Float?=null
         var lastGRWASort:Float?=null
         var lastGRWAMin:Float?=null
@@ -103,14 +105,14 @@ class Listener {
         var disperSrcPredictGRWAMinwithDeltaPcnt: Float? = null
         var disperSrcPredictGRWAMinSortRemainPcnt: Float? = null
         var disperSrcPredictGRWAMinSortwithDeltaPcnt: Float? = null
+
     }
 
     private val logger = KotlinLogging.logger {}
 
     //TODO: para the topic and group
-    @KafkaListener(topics = ["src-node-open"], groupId = "src")
-    fun listen(message: GenericRecord) {
-        //println("-----consumer receive msg from kafka Topic src-node-open----------")
+    fun loopAnalyseAndStore(message: GenericRecord) {
+        //This simulate a OPEN value comes in
 
         //-------------debug are for Last insert value---------------
         logger.debug{"--------------Last insert Value---------------"}
@@ -124,6 +126,8 @@ class Listener {
         logger.debug{"-----------------------------------------------"}
 
         currentValue=message.get("value") as Float
+
+        //Target functionalize ----------------------------------
         var rowValue = RowValue
         rowValue.srcValue = currentValue
 
@@ -149,6 +153,37 @@ class Listener {
             indexMap4GRWADeltaSort.put(abs(rowValue.deltaValuePcnt!!) , currentValue)
 
         }
+
+        //TODO: Consume the last predict with the value in
+        //OPEN CLOSE HIGH LOW for all these values
+        /*
+        lastPredict7when6
+        lastpredict7when6withDeltaGRWA
+        lastPredict7when6MidPt
+
+        lastPredict7when6Sort
+        lastpredict7when6withDeltaGRWASort
+        lastPredict7when6SortMidPt
+        */
+        /*The following values reflex optimistic when POSITIVE
+        rowValue.rocDeltaValue - lastRocDeltaValue
+        lastPredict7when6Open-lastClose
+        currentOpen-lastClose
+        currentOpen-lastPredict7when6MidPtOpen
+
+        //If OPEN has been already higher than the highest we predict
+        //Is it optimistic or will drop back?
+        currentOpen-lastPredict7when6High
+
+        This predict the trend of intra day
+        lastPredict7when6MidPtClose-currentOpen
+
+        This show persimistic whem NEGATIVE
+        currentOpen-lastPredict7when6Low
+
+
+         */
+
         lastSrcValue = currentValue
 
         /* When Reading the 5th value
@@ -302,6 +337,30 @@ class Listener {
 
         }
         */
+
+        //TODO: After calculation we get a new value for
+        /*
+        rowValue.rocDeltaValue
+        rowValue.deltaValuePcnt
+
+        lastPredict7when6Open
+        lastpredict7when6withDeltaGRWAOpen
+        lastPredict7when6MidPtOpen
+
+        lastPredict7when6SortOpen
+        lastpredict7when6withDeltaGRWASortOpen
+        lastPredict7when6SortMidPtOpen
+         */
+
+        //So it shows optimistic when the following value is POSITIVE
+        /*
+        lastPredict7when6Open-lastPredict7when6Close
+        lastPredict7when6Open-lastPredict7when6High
+
+        So it shows persimistic when the following value is Megative
+        lastPredict7when6Open-lastPredict7when6Low
+         */
+
         debugArea(rowValue)
         //println("-----consumer end process end for Topic src-node-open----------")
     }
@@ -333,4 +392,13 @@ class Listener {
         logger.debug{" disperSrcPredictGRWAMinSortwithDeltaPcnt: \t\t\t ${rowValue.disperSrcPredictGRWAMinSortwithDeltaPcnt}"}
         logger.debug{" -------------End of Current Value to be insert--------------"}
     }
+
+
+    @KafkaListener(topics = ["src-node-open"], groupId = "src")
+    fun listen(message: GenericRecord) {
+        currentValue=message.get("value") as Float
+        //TODO: When a realtime data get in
+    }
+
+    //TODO: When close is defined, predict next CLOSE and fill the data to DB
 }

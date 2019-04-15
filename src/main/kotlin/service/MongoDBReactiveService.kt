@@ -29,4 +29,16 @@ class MongoDBReactiveService {
 
         return listOf<TestEntity>(testEntity)
     }
+
+    //TODO: Get a list for watching stocks
+
+    //TODO: Insert record of querying historic data
+
+    // TODO: Get record from record of querying historic data (To prevent multiple calling)
+
+    // TODO: Insert record for time series node
+
+    // TODO: Get a list of time series node by some criteria
+
+    //
 }
