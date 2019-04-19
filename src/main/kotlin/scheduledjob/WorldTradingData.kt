@@ -15,6 +15,7 @@ import com.github.kittinunf.fuel.json.responseJson
 import main.kotlin.config.KakfaConfig
 import main.kotlin.controller.FuelController
 import main.kotlin.kafka.Listener
+import main.kotlin.kafka.ListenerFuncGrouping
 import main.kotlin.pojo.MongoSchema.Node
 import main.kotlin.pojo.MongoSchema.TimeSerialType
 import main.kotlin.pojo.httpRtn.WorldTradingData.StockRealtime
@@ -50,6 +51,9 @@ import java.util.*
 @ConfigurationProperties(prefix = "wtd")
 @Controller
 class WorldTradingData {
+
+    @Autowired
+    val listenerFuncGrouping: ListenerFuncGrouping = ListenerFuncGrouping()
 
     @Value("\${WorldTradingData.api_token}")                         val api_token: String = ""
     @Value("\${WorldTradingData.url_stock_realtime}")                val url_stock_realtime: String = ""
@@ -236,7 +240,7 @@ class WorldTradingData {
         //TODO: Figure out a way for analyse real time to The history
     }
 
-    //@Scheduled(fixedRate = 5000000)
+    @Scheduled(fixedRate = 5000000)
     fun getHistoryStock(){
         var pindate = LocalDate.parse("1980-01-01")
         var i:Long=1
@@ -265,7 +269,7 @@ class WorldTradingData {
          */
         val (request, response, result) = Fuel.get(
                 url_stock_history,
-                listOf("symbol" to "AAPL",
+                listOf("symbol" to "0939.HK",
                         "sort" to "oldest",
                         "api_token" to api_token))
                 .responseJson()
@@ -282,7 +286,7 @@ class WorldTradingData {
         var volume: BigDecimal = BigDecimal(0)
 
         val stockname = obj.getString("name")
-        logger.debug { "history.length: ${history.length()}" }
+        //logger.debug { "history.length: ${history.length()}" }
 
         var nodeloopOpen:Node?
         var nodeloopClose:Node?
@@ -361,7 +365,7 @@ class WorldTradingData {
                     println("END loop the buffer")
                 }
                 */
-
+                /*
                 val nodeOpen = GenericRecordBuilder(schema_open).apply {
                     set("id", ObjectId.get().toHexString())
                     set("pinDate", nodeloopPinDate.time)
@@ -373,7 +377,7 @@ class WorldTradingData {
                     //set("value", ByteBuffer.wrap(ba.asUByteArray().asByteArray()))
 
                 }.build()
-
+                */
                 /*
                 val nodeOpen = GenericRecordBuilder(schema_open) {
                     set("id", ObjectId.get().toHexString())
@@ -398,12 +402,13 @@ class WorldTradingData {
                 //kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeHigh,nodeloopHigh)
                 //kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeLow,nodeloopLow)
                 //kafkaTemplate.send(KakfaConfig.PRODUCER_SrcNodeVolume,nodeloopVolume)
-                Listener.loopAnalyseAndStore(nodeloopOpen,nodeloopClose,nodeloopHigh,nodeloopLow,nodeloopVolume)
+                listenerFuncGrouping.loopAnalyseAndStore(nodeloopOpen,nodeloopClose,nodeloopHigh,nodeloopLow,nodeloopVolume)
+
 
             } catch (e:Exception) {
                 logger.debug { "Error when executing ${pindate} of Stock $stockname: " }
-                logger.error { e.message}
-                e.printStackTrace()
+                logger.error { "${e.message}" }
+                //e.printStackTrace()
             } finally {
                 pindate=pindate.plusDays(1)
 

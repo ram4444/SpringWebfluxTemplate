@@ -82,6 +82,7 @@ class Listener {
     }
 
     object RowValue {
+
         var srcValue: Float? = null
         var deltaValue: Float? = null
         var deltaValuePcnt: Float? = null
@@ -394,7 +395,7 @@ class Listener {
     }
 
 
-    @KafkaListener(topics = ["src-node-open"], groupId = "src")
+    //@KafkaListener(topics = ["src-node-open"], groupId = "src")
     fun listen(message: GenericRecord) {
         currentValue=message.get("value") as Float
         //TODO: When a realtime data get in

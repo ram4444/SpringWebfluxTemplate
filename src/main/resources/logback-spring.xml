@@ -82,8 +82,12 @@
     <logger name="main.kotlin.scheduledjob.WorldTradingData" level="info" additivity="false">
         <appender-ref ref="RollingFileProducer" />
     </logger>
-
+    <!--
     <logger name="main.kotlin.kafka.Listener" level="trace" additivity="false">
+        <appender-ref ref="RollingFileConsumer" />
+    </logger>
+    -->
+    <logger name="main.kotlin.kafka.ListenerFuncGrouping" level="trace" additivity="false">
         <appender-ref ref="RollingFileConsumer" />
     </logger>
 
