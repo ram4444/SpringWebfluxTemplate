@@ -41,6 +41,14 @@ class ListenerFuncGrouping {
     var surplusPredictHighMidPt:Float?=null
     var surplusPredictLowMidPt:Float?=null
 
+    var predictOutraDeltaWhenOpen:Float?=null
+    var predictOutraDeltaWhenClose:Float?=null
+
+    var surplusPredictHigh2NextOpen:Float?=null
+    var surplusPredictLow2NextOpen:Float?=null
+
+
+
     companion object currentVar{
         var valueStackOpen:ValueStack = ValueStack("OPEN")
         var valueStackClose:ValueStack = ValueStack("CLOSE")
@@ -157,11 +165,11 @@ class ListenerFuncGrouping {
 
         //-------------debug are for Last insert value---------------
         logger.debug { "-------------Prediction before OPEN for date: ${nodeloopOpen.pinTS}-------------" }
-        debugAreaForLastInsert(valueStackOpen, "OPEN")
-        debugAreaForLastInsert(valueStackClose, "CLOSE")
-        debugAreaForLastInsert(valueStackHigh, "HIGH")
-        debugAreaForLastInsert(valueStackLow, "LOW")
-        debugAreaForLastInsert(valueStackVolume, "VOLUME")
+        debugAreaForLastInsert(valueStackOpen)
+        debugAreaForLastInsert(valueStackClose)
+        debugAreaForLastInsert(valueStackHigh)
+        debugAreaForLastInsert(valueStackLow)
+        //debugAreaForLastInsert(valueStackVolume, "VOLUME")
 
         //----------------preAnalyseProcess returns Triple(deltaValue, deltaValuePcnt, rocDeltaValue)----------------------
         var triOpen:Triple<Float?,Float?,Float?> = preAnalyseProcess(currentValueOpen, valueStackOpen.lastSrcValue, valueStackOpen.lastDeltaValue)
@@ -213,7 +221,7 @@ class ListenerFuncGrouping {
 
         //------------------------INDICATION AREA-------------------------------------
         // Consume the last predict, The following values reflex optimistic when POSITIVE
-
+        logger.debug{"-----------------------INDICATION AREA----------------------------------"}
         // rocDelta D2x
         if (valueStackOpen.lastRocDeltaValue != null) {
             valueStackOpen.rowValue.rocD2x = valueStackOpen.rowValue.rocDeltaValue!! - valueStackOpen.lastRocDeltaValue!!
@@ -239,12 +247,37 @@ class ListenerFuncGrouping {
             surplusPredictLowMidPt = currentValueOpen - valueStackLow.lastPredict7when6MidPt!!
         }
         /* At the point we gather
-                valueStackOpen.rowValueOpen.rocD2x
+                valueStackOpen.rowValue.rocD2x
                 outraDelta
                 predictIntraDayDelta
                 surplusPredictHighMidPt
                 surplusPredictLowMidPt
          */
+        // ------------------------------------------Verify Prediction----------------------------------------
+        if (predictOutraDeltaWhenOpen != null) {
+            if (predictOutraDeltaWhenOpen!! > 0 && outraDelta!! >0 || predictOutraDeltaWhenOpen!! < 0 && outraDelta!! < 0) {
+                logger.info{"predictOutraDeltaWhenOpen MATCH"}
+            } else {
+                logger.info{"predictOutraDeltaWhenOpen not MATCH"}
+            }
+        }
+
+        if (predictOutraDeltaWhenClose != null) {
+            if (predictOutraDeltaWhenClose!! > 0 && outraDelta!! >0 || predictOutraDeltaWhenClose!! < 0 && outraDelta!! < 0) {
+                logger.info{"predictOutraDeltaWhenClose MATCH"}
+            } else {
+                logger.info{"predictOutraDeltaWhenClose not MATCH"}
+            }
+        }
+        // ------------------------------------------Verify Prediction End----------------------------------------
+
+        //outraDelta vs predictOutraDeltaWhenClose
+        logger.debug{"rocD2x: ${valueStackOpen.rowValue.rocD2x}"}
+        logger.debug{"outraDelta: ${outraDelta}"}
+        logger.debug{"predictIntraDayDelta: ${predictIntraDayDelta}"}
+        logger.debug{"surplusPredictHighMidPt: ${surplusPredictHighMidPt}"}
+        logger.debug{"surplusPredictLowMidPt: ${surplusPredictLowMidPt}"}
+
         //------------------------INDICATION AREA END----------------------------------
 
         valueStackOpen.lastSrcValue = currentValueOpen
@@ -258,28 +291,28 @@ class ListenerFuncGrouping {
         logger.debug { "-------------Prediction AFTER OPEN for date: ${nodeloopOpen.pinTS}-------------" }
         debugArea(valueStackOpen.rowValue)
 
-        //After calculation we get a new value for
+        // Check against last predict
+        if (valueStackClose.lastPredict7when6MidPt !=null) {
+            predictOutraDeltaWhenOpen = valueStackOpen.lastPredict7when6MidPt!! - valueStackClose.lastPredict7when6MidPt!!
+        }
+
+        if (valueStackHigh.lastPredict7when6MidPt !=null) {
+            surplusPredictHigh2NextOpen = valueStackOpen.lastPredict7when6MidPt!! - valueStackHigh.lastPredict7when6MidPt!!
+        }
+
+        if (valueStackLow.lastPredict7when6MidPt !=null) {
+            surplusPredictLow2NextOpen = valueStackOpen.lastPredict7when6MidPt!! - valueStackLow.lastPredict7when6MidPt!!
+        }
         /*
-        rowValueOpen.rocDeltaValue
-        rowValueOpen.deltaValuePcnt
 
-        lastPredict7when6Open
-        lastpredict7when6withDeltaGRWAOpen
-        lastPredict7when6MidPtOpen
-
-        lastPredict7when6SortOpen
-        lastpredict7when6withDeltaGRWASortOpen
-        lastPredict7when6SortMidPtOpen
-         */
 
         //So it shows optimistic when the following value is POSITIVE
-        /*
-        lastPredict7when6Open-lastPredict7when6Close
         lastPredict7when6Open-lastPredict7when6High
 
         So it shows persimistic when the following value is Negative
         lastPredict7when6Open-lastPredict7when6Low
          */
+
         // All lastValue in valueStack is updated to latest at the pt.
 
 
@@ -291,11 +324,37 @@ class ListenerFuncGrouping {
         valueStackLow = processRow(currentValueLow, valueStackLow)
         valueStackVolume = processRow(currentValueVolume, valueStackVolume)
 
+        // ------------------------------------------Verify Prediction----------------------------------------
+
+        /*
+        // This predict the trend of intra day
+        if (valueStackClose.lastPredict7when6MidPt !=null) {
+            predictIntraDayDelta = valueStackClose.lastPredict7when6MidPt!! - currentValueOpen
+        }
+
+        // When OPEN has been already higher than tje Predict High, Is it optimistic or will drop back?
+        if (valueStackHigh.lastPredict7when6MidPt != null) {
+            surplusPredictHighMidPt = currentValueOpen - valueStackHigh.lastPredict7when6MidPt!!
+        }
+
+        // When Open has already been lower than the Predict Low, This show persimistic when NEGATIVE
+        if (valueStackLow.lastPredict7when6MidPt !=null) {
+            surplusPredictLowMidPt = currentValueOpen - valueStackLow.lastPredict7when6MidPt!!
+        }
+         */
+        predictIntraDayDelta
+        surplusPredictHighMidPt
+        surplusPredictLowMidPt
+        // ------------------------------------------Verify Prediction End----------------------------------------
+
         logger.debug { "-------------Prediction AFTER CLOSE for date: ${nodeloopClose.pinTS}-------------" }
+
+        predictOutraDeltaWhenClose = valueStackOpen.lastPredict7when6MidPt!! - valueStackClose.lastSrcValue!!
+
         debugArea(valueStackClose.rowValue)
         debugArea(valueStackHigh.rowValue)
         debugArea(valueStackLow.rowValue)
-        debugArea(valueStackVolume.rowValue)
+        //debugArea(valueStackVolume.rowValue)
     }
 
     fun preAnalyseProcess(currentValue:Float, lastSrcValue:Float?, lastDeltaValue:Float?):Triple<Float?,Float?,Float?>{
@@ -527,8 +586,6 @@ class ListenerFuncGrouping {
         // So that a predict of OPEN valueS can be generated for the next interval
         //Target functionalize ----------------------------------
 
-        //TODO: Adding the disperency to the predict
-
         valueStackOpen.rowValue.srcValue = currentValue
 
         valueStackOpen.loopListSrcValue4GRWA.add(currentValue)
@@ -729,15 +786,15 @@ class ListenerFuncGrouping {
         //println("-----consumer end process end for Topic src-node-open----------")
     }
     */
-    fun debugAreaForLastInsert(valueStack:ValueStack, name:String) {
+    fun debugAreaForLastInsert(valueStack:ValueStack) {
         //logger.debug{"--------------Last insert Value For ${name}---------------"}
         //logger.debug{"lastSrcValue: \t\t\t\t ${valueStack.lastSrcValue}"}
         //logger.debug{"lastGRWA: \t\t\t\t ${valueStack.lastGRWA}"}
         //logger.debug{"lastGRWASort: \t\t\t\t ${valueStack.lastGRWASort}"}
         //logger.debug{"lastGRWAMin: \t\t\t\t ${valueStack.lastGRWAMin}"}
         //logger.debug{"lastGRWAMinSort: \t\t\t\t ${valueStack.lastGRWAMinSort}"}
-        logger.debug{"${name} lastPredict7when6: \t\t\t\t ${valueStack.lastPredict7when6} \t ${valueStack.lastPredict7when6MidPt} \t ${valueStack.lastPredict7when6withDeltaGRWA}  "}
-        logger.debug{"${name} lastPredict7when6Sort: \t\t\t\t ${valueStack.lastPredict7when6Sort} \t ${valueStack.lastPredict7when6SortMidPt} \t ${valueStack.lastPredict7when6withDeltaGRWASort} "}
+        logger.debug{"${valueStack.name} lastPredict7when6: \t\t\t\t ${valueStack.lastPredict7when6} \t ${valueStack.lastPredict7when6MidPt} \t ${valueStack.lastPredict7when6withDeltaGRWA}  "}
+        logger.debug{"${valueStack.name} lastPredict7when6Sort: \t\t\t\t ${valueStack.lastPredict7when6Sort} \t ${valueStack.lastPredict7when6SortMidPt} \t ${valueStack.lastPredict7when6withDeltaGRWASort} "}
     }
 
     fun debugArea(rowValue:RowValue) {

@@ -269,7 +269,7 @@ class WorldTradingData {
          */
         val (request, response, result) = Fuel.get(
                 url_stock_history,
-                listOf("symbol" to "0939.HK",
+                listOf("symbol" to "2888.HK",
                         "sort" to "oldest",
                         "api_token" to api_token))
                 .responseJson()
