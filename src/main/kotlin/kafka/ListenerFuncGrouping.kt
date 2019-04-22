@@ -71,9 +71,17 @@ class ListenerFuncGrouping {
         var lastPredict7when6withDeltaGRWA:Float?=null
         var lastPredict7when6MidPt:Float?=null
 
+        var lastPredict7when6DisAdj:Float?=null
+        var lastPredict7when6withDeltaGRWADisAdj:Float?=null
+        var lastPredict7when6MidPtDisAdj:Float?=null
+
         var lastPredict7when6Sort:Float?=null
         var lastPredict7when6withDeltaGRWASort:Float?=null
         var lastPredict7when6SortMidPt:Float?=null
+
+        var lastPredict7when6SortDisAdj:Float?=null
+        var lastPredict7when6withDeltaGRWASortDisAdj:Float?=null
+        var lastPredict7when6SortMidPtDisAdj:Float?=null
 
         //var lastPredictOutra:Float?=null
 
@@ -140,6 +148,15 @@ class ListenerFuncGrouping {
         var disperSrcPredictGRWASortRemainPcnt: Float? = null
         var disperSrcPredictGRWASortwithDeltaPcnt: Float? = null
         var disperSrcPredictGRWASortMidPtPcnt: Float? = null
+
+        var disperSrcPredictGRWADisAdjRemainPcnt: Float? = null
+        var disperSrcPredictGRWAwithDeltaDisAdjPcnt: Float? = null
+        var disperSrcPredictGRWAMidPtDisAdjPcnt: Float? = null
+        var disperSrcPredictGRWASortDisAdjRemainPcnt: Float? = null
+        var disperSrcPredictGRWASortwithDeltaDisAdjPcnt: Float? = null
+        var disperSrcPredictGRWASortMidPtDisAdjPcnt: Float? = null
+
+
 
         var disperSrcPredictGRWAMinRemainPcnt: Float? = null
         var disperSrcPredictGRWAMinwithDeltaPcnt: Float? = null
@@ -253,7 +270,7 @@ class ListenerFuncGrouping {
                 surplusPredictHighMidPt
                 surplusPredictLowMidPt
          */
-        // ------------------------------------------Verify Prediction----------------------------------------
+        // ------------------------------------------Verify Prediction for Outra Day when Market OPEN----------------------------------------
         if (predictOutraDeltaWhenOpen != null) {
             if (predictOutraDeltaWhenOpen!! > 0 && outraDelta!! >0 || predictOutraDeltaWhenOpen!! < 0 && outraDelta!! < 0) {
                 logger.info{"predictOutraDeltaWhenOpen MATCH"}
@@ -262,6 +279,23 @@ class ListenerFuncGrouping {
             }
         }
 
+        if (surplusPredictHigh2NextOpen != null) {
+            if (surplusPredictHigh2NextOpen!! > 0 && outraDelta!! >0 || surplusPredictHigh2NextOpen!! < 0 && outraDelta!! < 0) {
+                logger.info{"surplusPredictHigh2NextOpen: After Market Prediction by yesterday High -> Today OPEN MATCH"}
+            } else {
+                logger.info{"surplusPredictHigh2NextOpen: After Market Prediction by yesterday High not MATCH"}
+            }
+        }
+
+        if (surplusPredictLow2NextOpen != null) {
+            if (surplusPredictLow2NextOpen!! > 0 && outraDelta!! >0 || surplusPredictLow2NextOpen!! < 0 && outraDelta!! < 0) {
+                logger.info{"surplusPredictLow2NextOpen: After Market Prediction by yesterday LOW -> Today OPEN MATCH"}
+            } else {
+                logger.info{"surplusPredictLow2NextOpen: After Market Prediction by yesterday LOW not MATCH"}
+            }
+        }
+
+
         if (predictOutraDeltaWhenClose != null) {
             if (predictOutraDeltaWhenClose!! > 0 && outraDelta!! >0 || predictOutraDeltaWhenClose!! < 0 && outraDelta!! < 0) {
                 logger.info{"predictOutraDeltaWhenClose MATCH"}
@@ -269,7 +303,7 @@ class ListenerFuncGrouping {
                 logger.info{"predictOutraDeltaWhenClose not MATCH"}
             }
         }
-        // ------------------------------------------Verify Prediction End----------------------------------------
+        // ------------------------------------------Verify Prediction for Outra Day when Market OPEN -------------End--------------------
 
         //outraDelta vs predictOutraDeltaWhenClose
         logger.debug{"rocD2x: ${valueStackOpen.rowValue.rocD2x}"}
@@ -293,25 +327,20 @@ class ListenerFuncGrouping {
 
         // Check against last predict
         if (valueStackClose.lastPredict7when6MidPt !=null) {
+            //Predict Tmr OPEN - Predict today Close
             predictOutraDeltaWhenOpen = valueStackOpen.lastPredict7when6MidPt!! - valueStackClose.lastPredict7when6MidPt!!
         }
 
         if (valueStackHigh.lastPredict7when6MidPt !=null) {
+            //Predict Tmr OPEN - Predict today High
             surplusPredictHigh2NextOpen = valueStackOpen.lastPredict7when6MidPt!! - valueStackHigh.lastPredict7when6MidPt!!
         }
 
         if (valueStackLow.lastPredict7when6MidPt !=null) {
+            //Predict Tmr OPEN - Predict today Low
             surplusPredictLow2NextOpen = valueStackOpen.lastPredict7when6MidPt!! - valueStackLow.lastPredict7when6MidPt!!
         }
-        /*
 
-
-        //So it shows optimistic when the following value is POSITIVE
-        lastPredict7when6Open-lastPredict7when6High
-
-        So it shows persimistic when the following value is Negative
-        lastPredict7when6Open-lastPredict7when6Low
-         */
 
         // All lastValue in valueStack is updated to latest at the pt.
 
@@ -324,7 +353,7 @@ class ListenerFuncGrouping {
         valueStackLow = processRow(currentValueLow, valueStackLow)
         valueStackVolume = processRow(currentValueVolume, valueStackVolume)
 
-        // ------------------------------------------Verify Prediction----------------------------------------
+        // ------------------------------------------Verify Prediction for for intraDay after Market CLOSE----------------------------------------
 
         /*
         // This predict the trend of intra day
@@ -342,10 +371,10 @@ class ListenerFuncGrouping {
             surplusPredictLowMidPt = currentValueOpen - valueStackLow.lastPredict7when6MidPt!!
         }
          */
-        predictIntraDayDelta
-        surplusPredictHighMidPt
-        surplusPredictLowMidPt
-        // ------------------------------------------Verify Prediction End----------------------------------------
+        //predictIntraDayDelta
+        //surplusPredictHighMidPt
+        //surplusPredictLowMidPt
+        // ------------------------------------------Verify Prediction for intraDay after Market CLOSE--------------------End-----------------
 
         logger.debug { "-------------Prediction AFTER CLOSE for date: ${nodeloopClose.pinTS}-------------" }
 
@@ -378,7 +407,7 @@ class ListenerFuncGrouping {
         // So that a predict of OPEN valueS can be generated for the next interval
         //Target functionalize ----------------------------------
 
-        //TODO: Adding the disperency to the predict
+
 
         valueStackTemp.rowValue.srcValue = currentValue
 
@@ -482,7 +511,6 @@ class ListenerFuncGrouping {
                                     +valueStackTemp.loopListSrcValue4DeltaGRWA[4]*rstGoldRatio3
                                     +valueStackTemp.loopListSrcValue4DeltaGRWA[5]*rstGoldRatio2))/rstGoldRatio1
 
-
                     //Calculate the disperency between actual and prediction of last time
                     if (valueStackTemp.lastPredict7when6 != null){
                         valueStackTemp.rowValue.disperSrcPredictGRWARemainPcnt=(valueStackTemp.lastPredict7when6!!-currentValue)/currentValue
@@ -494,11 +522,67 @@ class ListenerFuncGrouping {
                         valueStackTemp.rowValue.disperSrcPredictGRWAMidPtPcnt = (valueStackTemp.lastPredict7when6MidPt!! - currentValue) / currentValue
                     }
 
+                    //Calculate the disperency between actual and prediction(After Disperency Adjustment) of last time
+                    /*
+                    if (valueStackTemp.lastPredict7when6DisAdj != null){
+                        valueStackTemp.rowValue.disperSrcPredictGRWADisAdjRemainPcnt=(valueStackTemp.lastPredict7when6DisAdj!!-currentValue)/currentValue
+                    }
+                    if (valueStackTemp.lastPredict7when6withDeltaGRWADisAdj != null){
+                        valueStackTemp.rowValue.disperSrcPredictGRWAwithDeltaDisAdjPcnt=(valueStackTemp.lastPredict7when6withDeltaGRWADisAdj!!-currentValue)/currentValue
+                    }
+                    if (valueStackTemp.lastPredict7when6MidPtDisAdj != null) {
+                        valueStackTemp.rowValue.disperSrcPredictGRWAMidPtDisAdjPcnt = (valueStackTemp.lastPredict7when6MidPtDisAdj!! - currentValue) / currentValue
+                    }
+                    */
+
+
+                    //Adding the disperency to the predict
+                    /*
+                    var predict7when6DisAdj = predict7when6
+                    if (valueStackTemp.rowValue.disperSrcPredictGRWARemainPcnt!! > 0) {
+                        if (valueStackTemp.rowValue.disperSrcPredictGRWARemainPcnt != null) {
+                            predict7when6DisAdj = predict7when6*(1-valueStackTemp.rowValue.disperSrcPredictGRWARemainPcnt!!)
+                        } else {
+                            predict7when6DisAdj = predict7when6*(1-0)
+                        }
+
+                    } else {
+                        if (valueStackTemp.rowValue.disperSrcPredictGRWARemainPcnt != null) {
+                            predict7when6DisAdj = predict7when6*(1+valueStackTemp.rowValue.disperSrcPredictGRWARemainPcnt!!)
+                        } else {
+                            predict7when6DisAdj = predict7when6*(1+0)
+                        }
+
+                    }
+
+                    var predict7when6withDeltaGRWADisAdj = predict7when6withDeltaGRWA
+                    if (valueStackTemp.rowValue.disperSrcPredictGRWAwithDeltaPcnt!! > 0) {
+                        if (valueStackTemp.rowValue.disperSrcPredictGRWAwithDeltaPcnt != null) {
+                            predict7when6withDeltaGRWADisAdj = predict7when6withDeltaGRWA*(1-valueStackTemp.rowValue.disperSrcPredictGRWAwithDeltaPcnt!!)
+                        } else {
+                            predict7when6withDeltaGRWADisAdj = predict7when6withDeltaGRWA*(1-0)
+                        }
+
+                    } else {
+                        if (valueStackTemp.rowValue.disperSrcPredictGRWAwithDeltaPcnt != null) {
+                            predict7when6withDeltaGRWADisAdj = predict7when6withDeltaGRWA*(1+valueStackTemp.rowValue.disperSrcPredictGRWAwithDeltaPcnt!!)
+                        } else {
+                            predict7when6withDeltaGRWADisAdj = predict7when6withDeltaGRWA*(1+0)
+                        }
+
+                    }
+                     */
+
                     //update the last predict
                     valueStackTemp.lastPredict7when6 = predict7when6
                     valueStackTemp.lastPredict7when6withDeltaGRWA = predict7when6withDeltaGRWA
                     valueStackTemp.lastPredict7when6MidPt = (predict7when6 + predict7when6withDeltaGRWA)/2
 
+                    /*
+                    valueStackTemp.lastPredict7when6DisAdj = predict7when6DisAdj
+                    valueStackTemp.lastPredict7when6withDeltaGRWADisAdj= predict7when6withDeltaGRWADisAdj
+                    valueStackTemp.lastPredict7when6MidPtDisAdj = (predict7when6DisAdj + predict7when6withDeltaGRWADisAdj)/2
+                     */
                 }
 
                 //--------------------------------------------------------------------------------------------
@@ -538,10 +622,70 @@ class ListenerFuncGrouping {
                         valueStackTemp.rowValue.disperSrcPredictGRWASortMidPtPcnt = (valueStackTemp.lastPredict7when6SortMidPt!! - currentValue) / currentValue
                     }
 
+
+                    //Calculate the disperency between actual and prediction(After Disperency Adjustment) of last time
+                    /*
+                    if (valueStackTemp.lastPredict7when6SortDisAdj != null){
+                        valueStackTemp.rowValue.disperSrcPredictGRWASortDisAdjRemainPcnt=(valueStackTemp.lastPredict7when6SortDisAdj!!-currentValue)/currentValue
+                    }
+                    if (valueStackTemp.lastPredict7when6withDeltaGRWASortDisAdj != null){
+                        valueStackTemp.rowValue.disperSrcPredictGRWASortwithDeltaDisAdjPcnt=(valueStackTemp.lastPredict7when6withDeltaGRWASortDisAdj!!-currentValue)/currentValue
+                    }
+                    if (valueStackTemp.lastPredict7when6SortMidPtDisAdj != null) {
+                        valueStackTemp.rowValue.disperSrcPredictGRWASortMidPtDisAdjPcnt = (valueStackTemp.lastPredict7when6SortMidPtDisAdj!! - currentValue) / currentValue
+                    }
+                    */
+
+
+                    //Adding the disperency to the predict
+                    /*
+                    var predict7when6SortDisAdj = predict7when6Sort
+                    if (valueStackTemp.rowValue.disperSrcPredictGRWADisAdjRemainPcnt!! > 0) {
+                        if (valueStackTemp.rowValue.disperSrcPredictGRWASortDisAdjRemainPcnt != null){
+                            predict7when6SortDisAdj = predict7when6Sort*(1-valueStackTemp.rowValue.disperSrcPredictGRWASortDisAdjRemainPcnt!!)
+                        } else {
+                            predict7when6SortDisAdj = predict7when6Sort*(1-0)
+                        }
+
+                    } else {
+                        if (valueStackTemp.rowValue.disperSrcPredictGRWASortDisAdjRemainPcnt != null){
+                            predict7when6SortDisAdj = predict7when6Sort*(1+valueStackTemp.rowValue.disperSrcPredictGRWASortDisAdjRemainPcnt!!)
+                        } else {
+                            predict7when6SortDisAdj = predict7when6Sort*(1+0)
+                        }
+
+                    }
+
+                    var predict7when6withDeltaGRWASortDisAdj = predict7when6withDeltaGRWASort
+                    if (valueStackTemp.rowValue.disperSrcPredictGRWASortwithDeltaPcnt!! > 0) {
+                        if (valueStackTemp.rowValue.disperSrcPredictGRWASortwithDeltaPcnt != null){
+                            predict7when6withDeltaGRWASortDisAdj = predict7when6withDeltaGRWASort*(1-valueStackTemp.rowValue.disperSrcPredictGRWASortwithDeltaPcnt!!)
+                        } else {
+                            predict7when6withDeltaGRWASortDisAdj = predict7when6withDeltaGRWASort*(1-0)
+                        }
+
+                    } else {
+                        if (valueStackTemp.rowValue.disperSrcPredictGRWASortwithDeltaPcnt != null){
+                            predict7when6withDeltaGRWASortDisAdj = predict7when6withDeltaGRWASort*(1+valueStackTemp.rowValue.disperSrcPredictGRWASortwithDeltaPcnt!!)
+                        } else {
+                            predict7when6withDeltaGRWASortDisAdj = predict7when6withDeltaGRWASort*(1+0)
+                        }
+
+                    }
+                    */
+
+
                     //update the last predict
                     valueStackTemp.lastPredict7when6Sort = predict7when6Sort
                     valueStackTemp.lastPredict7when6withDeltaGRWASort = predict7when6withDeltaGRWASort
                     valueStackTemp.lastPredict7when6SortMidPt = (predict7when6Sort + predict7when6withDeltaGRWASort)/2
+
+                    /*
+                    valueStackTemp.lastPredict7when6SortDisAdj = predict7when6SortDisAdj
+                    valueStackTemp.lastPredict7when6withDeltaGRWASortDisAdj= predict7when6withDeltaGRWASortDisAdj
+                    valueStackTemp.lastPredict7when6SortMidPtDisAdj = (predict7when6SortDisAdj + predict7when6withDeltaGRWASortDisAdj)/2
+                    */
+
                 }
 
                 //Still necessary?
@@ -795,6 +939,10 @@ class ListenerFuncGrouping {
         //logger.debug{"lastGRWAMinSort: \t\t\t\t ${valueStack.lastGRWAMinSort}"}
         logger.debug{"${valueStack.name} lastPredict7when6: \t\t\t\t ${valueStack.lastPredict7when6} \t ${valueStack.lastPredict7when6MidPt} \t ${valueStack.lastPredict7when6withDeltaGRWA}  "}
         logger.debug{"${valueStack.name} lastPredict7when6Sort: \t\t\t\t ${valueStack.lastPredict7when6Sort} \t ${valueStack.lastPredict7when6SortMidPt} \t ${valueStack.lastPredict7when6withDeltaGRWASort} "}
+
+        logger.debug{"${valueStack.name} lastPredict7when6DisAdj: \t\t\t\t ${valueStack.lastPredict7when6DisAdj} \t ${valueStack.lastPredict7when6MidPtDisAdj} \t ${valueStack.lastPredict7when6withDeltaGRWADisAdj}  "}
+        logger.debug{"${valueStack.name} lastPredict7when6SortDisAdj: \t\t\t\t ${valueStack.lastPredict7when6SortDisAdj} \t ${valueStack.lastPredict7when6SortMidPtDisAdj} \t ${valueStack.lastPredict7when6withDeltaGRWASortDisAdj} "}
+
     }
 
     fun debugArea(rowValue:RowValue) {
@@ -820,6 +968,21 @@ class ListenerFuncGrouping {
         logger.debug{" disperSrcPredictGRWASortRemainPcnt: \t\t\t ${rowValue.disperSrcPredictGRWASortRemainPcnt}"}
         logger.debug{" disperSrcPredictGRWASortMidPtPcnt: \t\t\t ${rowValue.disperSrcPredictGRWASortMidPtPcnt}"}
         logger.debug{" disperSrcPredictGRWASortwithDeltaPcnt: \t\t\t ${rowValue.disperSrcPredictGRWASortwithDeltaPcnt}"}
+
+        var disperSrcPredictGRWADisAdjRemainPcnt: Float? = null
+        var disperSrcPredictGRWAwithDeltaDisAdjPcnt: Float? = null
+        var disperSrcPredictGRWAMidPtDisAdjPcnt: Float? = null
+        var disperSrcPredictGRWASortDisAdjRemainPcnt: Float? = null
+        var disperSrcPredictGRWASortwithDeltaDisAdjPcnt: Float? = null
+        var disperSrcPredictGRWASortMidPtDisAdjPcnt: Float? = null
+
+        logger.debug{" disperSrcPredictGRWADisAdjRemainPcnt: \t\t\t ${rowValue.disperSrcPredictGRWADisAdjRemainPcnt}"}
+        logger.debug{" disperSrcPredictGRWAMidPtDisAdjPcnt: \t\t\t ${rowValue.disperSrcPredictGRWAMidPtDisAdjPcnt}"}
+        logger.debug{" disperSrcPredictGRWAwithDeltaDisAdjPcnt: \t\t\t ${rowValue.disperSrcPredictGRWAwithDeltaDisAdjPcnt}"}
+
+        logger.debug{" disperSrcPredictGRWASortDisAdjRemainPcnt: \t\t\t ${rowValue.disperSrcPredictGRWASortDisAdjRemainPcnt}"}
+        logger.debug{" disperSrcPredictGRWASortMidPtDisAdjPcnt: \t\t\t ${rowValue.disperSrcPredictGRWASortMidPtDisAdjPcnt}"}
+        logger.debug{" disperSrcPredictGRWASortwithDeltaDisAdjPcnt: \t\t\t ${rowValue.disperSrcPredictGRWASortwithDeltaDisAdjPcnt}"}
 
         //logger.debug{" disperSrcPredictGRWAMinRemainPcnt: \t\t\t ${rowValue.disperSrcPredictGRWAMinRemainPcnt}"}
         //logger.debug{" disperSrcPredictGRWAMinwithDeltaPcnt: \t\t\t ${rowValue.disperSrcPredictGRWAMinwithDeltaPcnt}"}
