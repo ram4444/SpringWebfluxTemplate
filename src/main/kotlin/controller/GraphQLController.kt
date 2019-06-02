@@ -20,6 +20,7 @@ import main.kotlin.graphql.GraphQLRequest
 import main.kotlin.pojo.LightComment
 import main.kotlin.pojo.Response
 import main.kotlin.pojo.TestEntity
+import main.kotlin.scheduledjob.WorldTradingData
 import main.kotlin.service.MongoDBService
 import main.kotlin.service.WebfluxJSONPlaceholderService
 import main.kotlin.service.WebfluxService
@@ -80,7 +81,6 @@ class GraphQLController() {
                                 "query_func1" to StaticDataFetcher(999),
                                 "query_func2" to DataFetcher{mongoDBservice.testInsert()},
                                 "query_func3" to DataFetcher{mongoDBservice.testInsert2(it.getArgument("name"))}
-
                         )
         )
 
@@ -93,7 +93,7 @@ class GraphQLController() {
         logger.debug { "Debugging" }
         return "success"
     }
-
+    @CrossOrigin(origins = arrayOf("http://localhost:3000"))
     @PostMapping("/graphql")
     fun executeGraphQL(@RequestBody request:GraphQLRequest):Map<String, Any> {
 

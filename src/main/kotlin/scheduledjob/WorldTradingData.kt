@@ -242,6 +242,9 @@ class WorldTradingData {
 
     @Scheduled(fixedRate = 5000000)
     fun getHistoryStock(){
+        var symbol = "2888.HK"
+        //if (!stockcode.isNullOrBlank()) symbol = stockcode
+
         var pindate = LocalDate.parse("1980-01-01")
         var i:Long=1
 
@@ -269,7 +272,7 @@ class WorldTradingData {
          */
         val (request, response, result) = Fuel.get(
                 url_stock_history,
-                listOf("symbol" to "2888.HK",
+                listOf("symbol" to symbol,
                         "sort" to "oldest",
                         "api_token" to api_token))
                 .responseJson()
